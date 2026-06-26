@@ -2,23 +2,17 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 /**
- * Next.js 16 Proxy — Route Protection & Session Management
- *
- * Replaces the Next.js middleware.ts convention (renamed to proxy.ts in v16).
+ * Next.js Middleware/Proxy — Session Management & Authentication Check
  *
  * Responsibilities:
- * 1. Refresh Supabase auth session cookies on every request
- * 2. Protect /admin/* routes — redirect unauthenticated users to /login
- *
- * Per Software Architecture Document Section 6:
- * "A Next.js Middleware file intercepts requests to /admin/* paths.
- *  The middleware decodes the token with the Supabase client,
- *  checking for active sessions and valid roles."
+ * 1. Refresh Supabase auth session cookies on every request (single source of truth).
+ * 2. Redirect unauthenticated users trying to access protected routes (/admin/*) to /login.
+ * 3. Does NOT query the database or check roles/permissions (deferred to Server Components/Layouts).
  */
 export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  // Create Supabase client with cookie handling for session refresh
+  // Create server-side Supabase client with cookie storage integration
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -38,25 +32,29 @@ export default async function proxy(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: Do not add logic between createServerClient and getUser().
-  // This call refreshes the auth session token — must run on every request.
+  // Refresh user token on every request - single source of truth
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect all /admin/* routes
-  if (request.nextUrl.pathname.startsWith("/admin")) {
+  const pathname = request.nextUrl.pathname;
+
+  // Protect all /admin/* routes from anonymous guests
+  if (pathname.startsWith("/admin")) {
     const isDummySupabase = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("your-project-ref");
     if (!user && !isDummySupabase) {
-      // No session — redirect to login
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
-      loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+      loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
     }
+  }
 
-    // TODO (Sprint 3): Check user role from profiles/admins table
-    // For now, any authenticated user can access admin (will be restricted later)
+  // Redirect logged-in users attempting to access /login back home
+  if (pathname === "/login" && user) {
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/";
+    return NextResponse.redirect(homeUrl);
   }
 
   return supabaseResponse;
@@ -69,7 +67,7 @@ export const config = {
      * - _next/static (static assets)
      * - _next/image (image optimization)
      * - favicon.ico
-     * - Public assets (images, fonts)
+     * - Public media assets
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
