@@ -30,8 +30,9 @@ function LoginForm() {
     try {
       await login({ email, password });
       window.location.href = redirectPath;
-    } catch (err: any) {
-      setErrorMsg(err.message || "Giriş yapılamadı. Bilgilerinizi kontrol edin / Login failed. Verify credentials.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Giriş yapılamadı. Bilgilerinizi kontrol edin / Login failed. Verify credentials.";
+      setErrorMsg(message);
     }
   };
 

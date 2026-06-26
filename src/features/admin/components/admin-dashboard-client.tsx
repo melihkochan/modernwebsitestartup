@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Radio,
   Play,
   Square,
   Activity,
@@ -15,8 +14,6 @@ import {
   Settings,
   ShieldAlert,
   Terminal,
-  ArrowUpRight,
-  TrendingUp,
   RefreshCw,
   Clock,
 } from "lucide-react";

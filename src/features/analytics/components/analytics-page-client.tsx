@@ -1,16 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   TrendingUp,
   TrendingDown,
   Users,
   Clock,
-  Calendar,
   Flame,
   Award,
-  Info,
-  DollarSign,
   ArrowUpRight,
   Tv,
 } from "lucide-react";
@@ -22,20 +18,22 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
   CartesianGrid,
 } from "recharts";
 import { Container } from "@/components/layout/container";
-import { Section } from "@/components/layout/section";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
+interface TooltipPayloadItem {
+  value: number;
+  name?: string;
+}
+
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: any[];
+  payload?: TooltipPayloadItem[];
   label?: string;
   activeMetric: "viewers" | "followers" | "hours";
 }
@@ -179,16 +177,7 @@ export function AnalyticsPageClient() {
     }
   };
 
-  const getMetricLabel = () => {
-    switch (activeMetric) {
-      case "followers":
-        return "New Followers";
-      case "hours":
-        return "Hours Streamed";
-      default:
-        return "Avg Viewers";
-    }
-  };
+
 
 
 

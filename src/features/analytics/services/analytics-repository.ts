@@ -90,12 +90,13 @@ const supabaseAnalyticsRepository: AnalyticsRepository = {
     const supabase = createClient();
     try {
       // Fetch channel stats or fallback to mocks
-      const { data, error } = await supabase.from("stream_state").select("*").limit(1);
+      const { error } = await supabase.from("stream_state").select("*").limit(1);
       if (error) throw new RepositoryError(error.message, "FETCH_ANALYTICS_FAILED", error);
       return MOCK_METRICS;
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch metrics", "FETCH_ANALYTICS_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch metrics";
+      throw new RepositoryError(message, "FETCH_ANALYTICS_FAILED", err);
     }
   },
 

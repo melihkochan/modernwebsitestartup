@@ -1,9 +1,7 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import {
   HelpCircle,
-  MessageSquare,
   Globe,
   Radio,
   Cpu,

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { communityRepository } from "../services/community-repository";
-import type { GameSuggestion, Poll, FanMessage } from "../validators/community-schemas";
+import type { GameSuggestion } from "../validators/community-schemas";
 
 /**
  * Hook to retrieve all community game suggestions.

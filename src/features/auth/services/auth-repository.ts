@@ -25,7 +25,7 @@ export interface AuthRepository {
 
 class SupabaseAuthRepository implements AuthRepository {
   private getSupabase() {
-    return createClient() as any;
+    return createClient();
   }
 
   async login(email: string, password: string): Promise<{ user: User; session: Session }> {
@@ -39,11 +39,11 @@ class SupabaseAuthRepository implements AuthRepository {
 
       // Profile Synchronization: Ensure user profile is registered in DB
       const user = data.user;
-      const { data: profile, error: profileError } = await (supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .maybeSingle() as Promise<{ data: Profile | null; error: any }>);
+        .maybeSingle();
 
       if (!profileError && !profile) {
         // First login: sync info and insert profile
@@ -56,9 +56,10 @@ class SupabaseAuthRepository implements AuthRepository {
       }
 
       return { user: data.user, session: data.session };
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to authenticate user credentials", "AUTH_LOGIN_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to authenticate user credentials";
+      throw new RepositoryError(message, "AUTH_LOGIN_FAILED", err);
     }
   }
 
@@ -67,9 +68,10 @@ class SupabaseAuthRepository implements AuthRepository {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw new RepositoryError(error.message, "AUTH_LOGOUT_FAILED", error);
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to log out user session", "AUTH_LOGOUT_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to log out user session";
+      throw new RepositoryError(message, "AUTH_LOGOUT_FAILED", err);
     }
   }
 
@@ -79,9 +81,10 @@ class SupabaseAuthRepository implements AuthRepository {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw new RepositoryError(error.message, "AUTH_GET_SESSION_FAILED", error);
       return session;
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch current user session", "AUTH_GET_SESSION_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch current user session";
+      throw new RepositoryError(message, "AUTH_GET_SESSION_FAILED", err);
     }
   }
 
@@ -91,9 +94,10 @@ class SupabaseAuthRepository implements AuthRepository {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw new RepositoryError(error.message, "AUTH_GET_USER_FAILED", error);
       return user;
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch current auth user", "AUTH_GET_USER_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch current auth user";
+      throw new RepositoryError(message, "AUTH_GET_USER_FAILED", err);
     }
   }
 
@@ -103,17 +107,18 @@ class SupabaseAuthRepository implements AuthRepository {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .maybeSingle() as Promise<{ data: Profile | null; error: any }>);
+        .maybeSingle();
 
       if (error) throw new RepositoryError(error.message, "AUTH_GET_PROFILE_FAILED", error);
       return data;
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch current user profile", "AUTH_GET_PROFILE_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch current user profile";
+      throw new RepositoryError(message, "AUTH_GET_PROFILE_FAILED", err);
     }
   }
 
@@ -123,9 +128,10 @@ class SupabaseAuthRepository implements AuthRepository {
       const { data: { session }, error } = await supabase.auth.refreshSession();
       if (error) throw new RepositoryError(error.message, "AUTH_REFRESH_SESSION_FAILED", error);
       return session;
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to refresh user session", "AUTH_REFRESH_SESSION_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to refresh user session";
+      throw new RepositoryError(message, "AUTH_REFRESH_SESSION_FAILED", err);
     }
   }
 
@@ -136,9 +142,10 @@ class SupabaseAuthRepository implements AuthRepository {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw new RepositoryError(error.message, "AUTH_RESET_PASSWORD_FAILED", error);
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to request password reset", "AUTH_RESET_PASSWORD_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to request password reset";
+      throw new RepositoryError(message, "AUTH_RESET_PASSWORD_FAILED", err);
     }
   }
 
@@ -152,9 +159,10 @@ class SupabaseAuthRepository implements AuthRepository {
         },
       });
       if (error) throw new RepositoryError(error.message, "AUTH_MAGIC_LINK_FAILED", error);
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to dispatch magic authentication link", "AUTH_MAGIC_LINK_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to dispatch magic authentication link";
+      throw new RepositoryError(message, "AUTH_MAGIC_LINK_FAILED", err);
     }
   }
 
@@ -171,46 +179,49 @@ class SupabaseAuthRepository implements AuthRepository {
       if (error) throw new RepositoryError(error.message, "AUTH_OAUTH_FAILED", error);
       if (!data?.url) throw new RepositoryError("OAuth url not returned by provider client", "AUTH_OAUTH_FAILED");
       return { url: data.url };
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to initialize OAuth sequence", "AUTH_OAUTH_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to initialize OAuth sequence";
+      throw new RepositoryError(message, "AUTH_OAUTH_FAILED", err);
     }
   }
 
   async isAdmin(userId: string): Promise<boolean> {
     const supabase = this.getSupabase();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("admins")
         .select("role")
         .eq("id", userId)
-        .maybeSingle() as Promise<{ data: { role: string } | null; error: any }>);
+        .maybeSingle();
       if (error) throw new RepositoryError(error.message, "AUTH_CHECK_ROLE_FAILED", error);
       return !!data;
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to run admin authorization query", "AUTH_CHECK_ROLE_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to run admin authorization query";
+      throw new RepositoryError(message, "AUTH_CHECK_ROLE_FAILED", err);
     }
   }
 
   async getPermissions(userId: string): Promise<string | null> {
     const supabase = this.getSupabase();
     try {
-      const { data: adminData } = await (supabase
+      const { data: adminData } = await supabase
         .from("admins")
         .select("role")
         .eq("id", userId)
-        .maybeSingle() as Promise<{ data: { role: string } | null; error: any }>);
+        .maybeSingle();
       if (adminData) return adminData.role;
 
-      const { data: profile } = await (supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("id")
         .eq("id", userId)
-        .maybeSingle() as Promise<{ data: { id: string } | null; error: any }>);
+        .maybeSingle();
       return profile ? "authenticated" : "anonymous";
-    } catch (err: any) {
-      throw new RepositoryError("Failed to fetch user permissions", "AUTH_PERMISSIONS_FAILED", err);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to fetch user permissions";
+      throw new RepositoryError(message, "AUTH_PERMISSIONS_FAILED", err);
     }
   }
 }

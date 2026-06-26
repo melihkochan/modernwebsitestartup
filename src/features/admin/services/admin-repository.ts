@@ -89,12 +89,12 @@ const supabaseAdminRepository: AdminRepository = {
   },
 
   async getVitals(): Promise<SystemVitals> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("stream_state")
         .select("*")
-        .maybeSingle() as Promise<{ data: Database["public"]["Tables"]["stream_state"]["Row"] | null; error: any }>);
+        .maybeSingle();
       if (error) throw new RepositoryError(error.message, "FETCH_VITALS_FAILED", error);
       if (!data) return mockAdminRepository.getVitals();
       
@@ -105,20 +105,21 @@ const supabaseAdminRepository: AdminRepository = {
         bitrate: data.is_live ? data.viewer_count * 0.6 : 0, // Mock calculation derived from DB
         viewerCount: data.viewer_count,
       };
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch system vitals", "FETCH_VITALS_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch system vitals";
+      throw new RepositoryError(message, "FETCH_VITALS_FAILED", err);
     }
   },
 
   async getSyncStatus(): Promise<CreatorSyncStatus> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("settings")
         .select("*")
         .eq("key", "kick_sync_status")
-        .maybeSingle() as Promise<{ data: { key: string; value: any } | null; error: any }>);
+        .maybeSingle();
 
       if (error) throw new RepositoryError(error.message, "FETCH_SYNC_STATUS_FAILED", error);
       if (!data) {
@@ -135,18 +136,19 @@ const supabaseAdminRepository: AdminRepository = {
           channel: "zehragn",
         };
       }
-      return data.value as CreatorSyncStatus;
-    } catch (err: any) {
+      return data.value as unknown as CreatorSyncStatus;
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch creator sync status", "FETCH_SYNC_STATUS_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch creator sync status";
+      throw new RepositoryError(message, "FETCH_SYNC_STATUS_FAILED", err);
     }
   },
 
   async triggerSync(): Promise<CreatorSyncStatus> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
       // Invoke the Edge Function using the standard Supabase invoke client method
-      const { data, error } = await supabase.functions.invoke("kick-sync", {
+      const { error } = await supabase.functions.invoke("kick-sync", {
         method: "POST",
       });
 
@@ -154,9 +156,10 @@ const supabaseAdminRepository: AdminRepository = {
       
       // Load the freshly written sync status from the settings table
       return this.getSyncStatus();
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to execute manual creator synchronization", "TRIGGER_SYNC_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to execute manual creator synchronization";
+      throw new RepositoryError(message, "TRIGGER_SYNC_FAILED", err);
     }
   },
 };

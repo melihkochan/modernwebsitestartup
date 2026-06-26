@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -22,7 +21,7 @@ import { useCurrentProfile, usePermissions, useAuth } from "@/features/auth/hook
 interface AdminSidebarItem {
   label: string;
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 const SIDEBAR_ITEMS: AdminSidebarItem[] = [
@@ -35,7 +34,6 @@ const SIDEBAR_ITEMS: AdminSidebarItem[] = [
 ];
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const [activeItem, setActiveItem] = useState("Dashboard");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { data: profile } = useCurrentProfile();

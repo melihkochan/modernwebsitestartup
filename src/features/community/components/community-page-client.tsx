@@ -5,13 +5,9 @@ import {
   MessageSquare,
   ThumbsUp,
   Vote,
-  Sparkles,
   Plus,
-  Compass,
   Users,
   Gamepad,
-  TrendingUp,
-  X,
   Check,
 } from "lucide-react";
 import { useState } from "react";

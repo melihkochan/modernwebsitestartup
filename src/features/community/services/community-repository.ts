@@ -127,12 +127,12 @@ const mockCommunityRepository: CommunityRepository = {
 
 const supabaseCommunityRepository: CommunityRepository = {
   async getSuggestions(): Promise<GameSuggestion[]> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("game_suggestions")
         .select("*")
-        .order("votes_count", { ascending: false }) as Promise<{ data: Database["public"]["Tables"]["game_suggestions"]["Row"][] | null; error: any }>);
+        .order("votes_count", { ascending: false });
 
       if (error) throw new RepositoryError(error.message, "FETCH_SUGGESTIONS_FAILED", error);
       if (!data) return [];
@@ -146,16 +146,17 @@ const supabaseCommunityRepository: CommunityRepository = {
         description: d.admin_note || "No admin notes.",
         isUpvoted: false,
       }));
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch suggestions", "FETCH_SUGGESTIONS_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch suggestions";
+      throw new RepositoryError(message, "FETCH_SUGGESTIONS_FAILED", err);
     }
   },
 
-  async suggestGame(game): Promise<GameSuggestion> {
-    const supabase = createClient() as any;
+  async suggestGame(game: Omit<GameSuggestion, "id" | "votes" | "isUpvoted">): Promise<GameSuggestion> {
+    const supabase = createClient();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("game_suggestions")
         .insert({
           game_title: game.game,
@@ -165,7 +166,7 @@ const supabaseCommunityRepository: CommunityRepository = {
           admin_note: game.description,
         })
         .select()
-        .single() as Promise<{ data: Database["public"]["Tables"]["game_suggestions"]["Row"] | null; error: any }>);
+        .single();
 
       if (error) throw new RepositoryError(error.message, "SUGGEST_GAME_FAILED", error);
       if (!data) throw new RepositoryError("No data returned from insert", "SUGGEST_GAME_FAILED");
@@ -179,14 +180,15 @@ const supabaseCommunityRepository: CommunityRepository = {
         description: data.admin_note || "",
         isUpvoted: true,
       };
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to submit game suggestion", "SUGGEST_GAME_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to submit game suggestion";
+      throw new RepositoryError(message, "SUGGEST_GAME_FAILED", err);
     }
   },
 
-  async upvoteSuggestion(id): Promise<void> {
-    const supabase = createClient() as any;
+  async upvoteSuggestion(id: string): Promise<void> {
+    const supabase = createClient();
     try {
       const { error } = await supabase.rpc("increment_suggestion_votes", { suggestion_id: id });
       if (error) {
@@ -197,31 +199,32 @@ const supabaseCommunityRepository: CommunityRepository = {
           .eq("id", id);
         if (fallbackError) throw new RepositoryError(fallbackError.message, "UPVOTE_FAILED", fallbackError);
       }
-    } catch (err: any) {
-      throw new RepositoryError("Failed to cast upvote", "UPVOTE_FAILED", err);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to cast upvote";
+      throw new RepositoryError(message, "UPVOTE_FAILED", err);
     }
   },
 
   async getActivePoll(): Promise<Poll> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("polls")
         .select("*")
         .eq("is_active", true)
-        .maybeSingle() as Promise<{ data: Database["public"]["Tables"]["polls"]["Row"] | null; error: any }>);
+        .maybeSingle();
 
       if (error) throw new RepositoryError(error.message, "FETCH_POLL_FAILED", error);
       if (!data) return mockPoll;
 
-      const rawOptions = (data.options as any) || [];
-      const options = rawOptions.map((opt: any) => ({
+      const rawOptions = (data.options as unknown as Array<{ id: string; label: string; votes?: number }>) || [];
+      const options = rawOptions.map((opt) => ({
         id: opt.id,
         label: opt.label,
         votes: opt.votes || 0,
       }));
 
-      const totalVotes = options.reduce((acc: number, curr: any) => acc + curr.votes, 0);
+      const totalVotes = options.reduce((acc: number, curr) => acc + curr.votes, 0);
 
       return {
         id: data.id,
@@ -230,13 +233,14 @@ const supabaseCommunityRepository: CommunityRepository = {
         totalVotes,
         endsIn: data.expires_at ? "Active" : "Closed",
       };
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch active poll", "FETCH_POLL_FAILED", err);
+      const message = err instanceof Error ? err.message : "Failed to fetch active poll";
+      throw new RepositoryError(message, "FETCH_POLL_FAILED", err);
     }
   },
 
-  async castVote(pollId, optionId): Promise<Poll> {
+  async castVote(pollId: string, optionId: string): Promise<Poll> {
     // Staging mock return as mutation logic varies depending on json updates
     return mockCommunityRepository.castVote(pollId, optionId);
   },
@@ -245,7 +249,7 @@ const supabaseCommunityRepository: CommunityRepository = {
     return mockCommunityRepository.getFanMessages();
   },
 
-  async addFanMessage(username, message): Promise<FanMessage> {
+  async addFanMessage(username: string, message: string): Promise<FanMessage> {
     return mockCommunityRepository.addFanMessage(username, message);
   },
 };
