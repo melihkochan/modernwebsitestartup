@@ -4,9 +4,24 @@ import { RepositoryError } from "@/lib/errors";
 import type { SystemLog, SystemVitals } from "../validators/admin-schemas";
 import type { Database } from "@/types/database";
 
+export interface CreatorSyncStatus {
+  status: "success" | "failed" | "syncing" | "idle";
+  last_success_at: string | null;
+  last_failed_at: string | null;
+  last_response_time_ms: number;
+  duration_ms: number;
+  updated_records: number;
+  updated_tables: number;
+  error: string | null;
+  provider: string;
+  channel: string;
+}
+
 export interface AdminRepository {
   getSystemLogs(): Promise<SystemLog[]>;
   getVitals(): Promise<SystemVitals>;
+  getSyncStatus(): Promise<CreatorSyncStatus>;
+  triggerSync(): Promise<CreatorSyncStatus>;
 }
 
 // ---------------------------------------------------------------------------
@@ -22,6 +37,19 @@ const INITIAL_LOGS: SystemLog[] = [
   { id: "log-6", time: "00:01:12", type: "success", message: "Chat webhook active. Listeners connected." },
 ];
 
+let mockSyncStatus: CreatorSyncStatus = {
+  status: "success",
+  last_success_at: "2026-06-26T21:00:00.000Z",
+  last_failed_at: null,
+  last_response_time_ms: 342,
+  duration_ms: 342,
+  updated_records: 5,
+  updated_tables: 4,
+  error: null,
+  provider: "kick",
+  channel: "zehragn",
+};
+
 const mockAdminRepository: AdminRepository = {
   async getSystemLogs() { return INITIAL_LOGS; },
   async getVitals() {
@@ -32,6 +60,22 @@ const mockAdminRepository: AdminRepository = {
       bitrate: 8200,
       viewerCount: 12438,
     };
+  },
+  async getSyncStatus(): Promise<CreatorSyncStatus> {
+    return mockSyncStatus;
+  },
+  async triggerSync(): Promise<CreatorSyncStatus> {
+    mockSyncStatus = {
+      ...mockSyncStatus,
+      status: "success",
+      last_success_at: new Date().toISOString(),
+      last_response_time_ms: Math.round(150 + Math.random() * 200),
+      duration_ms: Math.round(150 + Math.random() * 200),
+      updated_records: 5,
+      updated_tables: 4,
+      error: null,
+    };
+    return mockSyncStatus;
   },
 };
 
@@ -66,6 +110,55 @@ const supabaseAdminRepository: AdminRepository = {
       throw new RepositoryError("Failed to fetch system vitals", "FETCH_VITALS_FAILED", err);
     }
   },
+
+  async getSyncStatus(): Promise<CreatorSyncStatus> {
+    const supabase = createClient() as any;
+    try {
+      const { data, error } = await (supabase
+        .from("settings")
+        .select("*")
+        .eq("key", "kick_sync_status")
+        .maybeSingle() as Promise<{ data: { key: string; value: any } | null; error: any }>);
+
+      if (error) throw new RepositoryError(error.message, "FETCH_SYNC_STATUS_FAILED", error);
+      if (!data) {
+        return {
+          status: "idle",
+          last_success_at: null,
+          last_failed_at: null,
+          last_response_time_ms: 0,
+          duration_ms: 0,
+          updated_records: 0,
+          updated_tables: 0,
+          error: null,
+          provider: "kick",
+          channel: "zehragn",
+        };
+      }
+      return data.value as CreatorSyncStatus;
+    } catch (err: any) {
+      if (err instanceof RepositoryError) throw err;
+      throw new RepositoryError("Failed to fetch creator sync status", "FETCH_SYNC_STATUS_FAILED", err);
+    }
+  },
+
+  async triggerSync(): Promise<CreatorSyncStatus> {
+    const supabase = createClient() as any;
+    try {
+      // Invoke the Edge Function using the standard Supabase invoke client method
+      const { data, error } = await supabase.functions.invoke("kick-sync", {
+        method: "POST",
+      });
+
+      if (error) throw new RepositoryError(error.message, "TRIGGER_SYNC_FAILED", error);
+      
+      // Load the freshly written sync status from the settings table
+      return this.getSyncStatus();
+    } catch (err: any) {
+      if (err instanceof RepositoryError) throw err;
+      throw new RepositoryError("Failed to execute manual creator synchronization", "TRIGGER_SYNC_FAILED", err);
+    }
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -75,3 +168,4 @@ const supabaseAdminRepository: AdminRepository = {
 export const adminRepository: AdminRepository = USE_MOCK_DATA
   ? mockAdminRepository
   : supabaseAdminRepository;
+

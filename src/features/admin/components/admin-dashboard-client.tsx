@@ -17,12 +17,15 @@ import {
   Terminal,
   ArrowUpRight,
   TrendingUp,
+  RefreshCw,
+  Clock,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useCreatorSyncStatus, useTriggerCreatorSync } from "../hooks/use-admin";
 
 // ---------------------------------------------------------------------------
 // Mock Data for Admin Panel
@@ -51,6 +54,9 @@ const RECENT_SUGGESTIONS = [
 ];
 
 export function AdminDashboardClient() {
+  const { data: syncStatus } = useCreatorSyncStatus();
+  const { mutate: triggerSync, isPending: isSyncing } = useTriggerCreatorSync();
+
   const [isLive, setIsLive] = useState(false);
   const [cpuUsage, setCpuUsage] = useState(12);
   const [memoryUsage, setMemoryUsage] = useState(48);
@@ -404,6 +410,133 @@ export function AdminDashboardClient() {
             <button className="text-center text-[10px] font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors py-1 cursor-pointer">
               View All Submissions (148)
             </button>
+          </GlassCard>
+
+          {/* Creator Sync Engine Panel */}
+          <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <RefreshCw className={cn("w-5 h-5 text-[var(--accent-primary)]", (isSyncing || syncStatus?.status === "syncing") && "animate-spin")} />
+                <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                  Creator Sync Engine
+                </h2>
+              </div>
+              <Badge className={cn(
+                "border-none text-white text-[10px] font-bold px-2 py-0.5 rounded-full",
+                (isSyncing || syncStatus?.status === "syncing") ? "bg-amber-500 animate-pulse" :
+                syncStatus?.status === "success" ? "bg-emerald-500" :
+                syncStatus?.status === "failed" ? "bg-[var(--live-red)]" : "bg-zinc-700"
+              )}>
+                {(isSyncing || syncStatus?.status === "syncing") ? "SYNCING..." : (syncStatus?.status || "IDLE").toUpperCase()}
+              </Badge>
+            </div>
+
+            <div className="flex flex-col gap-3 font-mono text-[11px] text-[var(--text-secondary)]">
+              <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2">
+                <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-zinc-500" /> Current Provider
+                </span>
+                <span className="font-bold text-[var(--text-primary)] capitalize">
+                  {syncStatus?.provider || "kick"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2">
+                <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-zinc-500" /> Channel Slug
+                </span>
+                <span className="font-bold text-zinc-400">
+                  @{syncStatus?.channel || "zehragn"}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Last Success
+                  </span>
+                  <span className="text-[10px] text-[var(--text-primary)]">
+                    {syncStatus?.last_success_at
+                      ? new Date(syncStatus.last_success_at).toLocaleTimeString()
+                      : "Never"}
+                  </span>
+                </div>
+                {syncStatus?.last_success_at && (
+                  <span className="text-[9px] text-[var(--text-tertiary)] text-right">
+                    {new Date(syncStatus.last_success_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-500" /> Last Failure
+                  </span>
+                  <span className="text-[10px] text-[var(--text-primary)]">
+                    {syncStatus?.last_failed_at
+                      ? new Date(syncStatus.last_failed_at).toLocaleTimeString()
+                      : "None"}
+                  </span>
+                </div>
+                {syncStatus?.last_failed_at && (
+                  <span className="text-[9px] text-[var(--text-tertiary)] text-right">
+                    {new Date(syncStatus.last_failed_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2">
+                <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-zinc-500" /> Sync Latency
+                </span>
+                <span className="text-[var(--text-primary)] font-bold">
+                  {syncStatus?.duration_ms || syncStatus?.last_response_time_ms || 0} ms
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2">
+                <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-zinc-500" /> Updated Tables
+                </span>
+                <span className="text-[var(--text-primary)] font-bold">
+                  {syncStatus?.updated_tables ?? 0} tables
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
+                  <Settings className="w-3.5 h-3.5 text-zinc-500" /> Updated Records
+                </span>
+                <span className="text-[var(--text-primary)] font-bold">
+                  {syncStatus?.updated_records ?? 0} records
+                </span>
+              </div>
+            </div>
+
+            {syncStatus?.error && (
+              <div className="p-2.5 rounded-lg border border-red-500/20 bg-red-500/5 text-[10px] text-red-400 font-mono break-all max-h-[80px] overflow-y-auto">
+                Error: {syncStatus.error}
+              </div>
+            )}
+
+            <Button
+              onClick={() => triggerSync()}
+              disabled={isSyncing || syncStatus?.status === "syncing"}
+              className="w-full h-9 bg-gradient-to-r from-[var(--accent-primary)] to-indigo-600 hover:from-[var(--accent-primary)]/90 hover:to-indigo-600/90 text-white font-bold text-[10px] tracking-wider uppercase rounded-lg shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Syncing Database...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Sync Now
+                </>
+              )}
+            </Button>
           </GlassCard>
 
           {/* Discord Mod Banner */}
