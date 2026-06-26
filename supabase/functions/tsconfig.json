@@ -8,7 +8,11 @@
     "noImplicitAny": false,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "npm:zod@3.22.4": ["../node_modules/zod"]
+    }
   },
   "include": ["**/*.ts"]
 }

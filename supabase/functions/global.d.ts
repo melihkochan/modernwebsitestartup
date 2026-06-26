@@ -13,4 +13,11 @@ declare namespace Deno {
     options: ServeOptions,
     handler: (request: Request, info: any) => Response | Promise<Response>
   ): void;
+
+  export const env: {
+    get(key: string): string | undefined;
+    set(key: string, value: string): void;
+    delete(key: string): void;
+    toObject(): Record<string, string>;
+  };
 }

@@ -134,7 +134,7 @@ export class KickProvider implements CreatorProvider {
       throw new Error(`Kick authentication failed (HTTP ${response.status}): ${errText}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
     this.accessToken = data.access_token;
     this.tokenExpiresAt = now + (data.expires_in * 1000);
     return this.accessToken!;
