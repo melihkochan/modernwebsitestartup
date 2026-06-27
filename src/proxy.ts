@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { resilientFetch } from "@/lib/supabase/resilient-fetch";
 
 // Circuit Breaker / Cooldown state to prevent overloading the request queue when Supabase is down
 let lastUnreachableTime = 0;
@@ -33,10 +32,6 @@ export default async function proxy(request: NextRequest) {
             supabaseResponse.cookies.set(name, value, options);
           });
         },
-      },
-      global: {
-        // Shorter 2-second timeout and 0 retries for middleware to keep response times fast
-        fetch: (input, init) => resilientFetch(input, init, 2000, 0),
       },
     }
   );

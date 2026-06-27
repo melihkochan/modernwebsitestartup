@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/database";
-import { resilientFetch } from "./resilient-fetch";
 
 /**
  * Creates a Supabase client for use in Server Components and API Routes.
@@ -39,9 +38,6 @@ export async function createClient() {
           }
         },
       },
-      global: {
-        fetch: resilientFetch,
-      },
     }
   );
 }
@@ -74,9 +70,6 @@ export function createAdminClient() {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
-      },
-      global: {
-        fetch: resilientFetch,
       },
     }
   );
