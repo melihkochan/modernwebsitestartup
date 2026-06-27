@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { resilientFetch } from "@/lib/supabase/resilient-fetch";
 
 /**
  * Next.js Middleware/Proxy — Session Management & Authentication Check
@@ -29,19 +30,42 @@ export default async function proxy(request: NextRequest) {
           });
         },
       },
+      global: {
+        fetch: resilientFetch,
+      },
     }
   );
 
+  let user = null;
+  let isUnreachable = false;
+
   // Refresh user token on every request - single source of truth
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Wrapped in try/catch to gracefully handle connection timeouts and network errors
+  try {
+    const {
+      data: { user: fetchedUser },
+    } = await supabase.auth.getUser();
+    user = fetchedUser;
+  } catch (err) {
+    console.error("Supabase Auth service is temporarily unreachable in proxy:", err);
+    isUnreachable = true;
+  }
 
   const pathname = request.nextUrl.pathname;
 
   // Protect all /admin/* routes from anonymous guests
   if (pathname.startsWith("/admin")) {
     const isDummySupabase = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("your-project-ref");
+    
+    // If Supabase is unreachable and it's not a dummy setup, redirect to login with error parameter
+    if (isUnreachable && !isDummySupabase) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("error", "service_unreachable");
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
     if (!user && !isDummySupabase) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
