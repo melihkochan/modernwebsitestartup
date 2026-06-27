@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import dns from "node:dns";
+
+// Resolve connection timeouts (UND_ERR_CONNECT_TIMEOUT) on systems with broken IPv6 DNS setups
+// (e.g. fe80::1 link-local DNS timeouts). Forces Node.js to prefer IPv4 first for DNS resolution.
+dns.setDefaultResultOrder("ipv4first");
 
 const nextConfig: NextConfig = {
   // Strict mode for React 19 — catches side effects early
