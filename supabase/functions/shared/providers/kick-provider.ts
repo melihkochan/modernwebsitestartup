@@ -175,7 +175,11 @@ export class KickProvider implements CreatorProvider {
       avatarUrl,
       bannerUrl,
       bio: channel.channel_description || null,
-      followerCount: channel.follower_count || channel.followers_count || 15420, // default fallback
+      // followerCount: The Kick public API does not return follower_count via client credentials.
+      // Returning null is correct — do NOT substitute with a hardcoded fallback.
+      followerCount: channel.follower_count ?? channel.followers_count ?? null,
+      // subscriberCount: officially exposed via active_subscribers_count
+      subscriberCount: channel.active_subscribers_count ?? null,
       verified: true, // creator verified
     };
   }

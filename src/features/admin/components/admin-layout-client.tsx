@@ -9,7 +9,6 @@ import {
   Sliders,
   Calendar,
   ThumbsUp,
-  Vote,
   Settings,
   ArrowLeft,
   Menu,
@@ -26,12 +25,11 @@ interface AdminSidebarItem {
 }
 
 const SIDEBAR_ITEMS: AdminSidebarItem[] = [
-  { label: "Kontrol Paneli", href: "/admin", icon: LayoutDashboard },
-  { label: "Yayın Kontrolleri", href: "/admin/live", icon: Sliders },
-  { label: "Yayın Akışı", href: "/admin/schedule", icon: Calendar },
-  { label: "Öneri Havuzu", href: "/admin/suggestions", icon: ThumbsUp },
-  { label: "Topluluk Anketleri", href: "/admin/polls", icon: Vote },
-  { label: "Ayarlar & Senkron", href: "/admin/settings", icon: Settings },
+  { label: "Genel Bakış", href: "/admin", icon: LayoutDashboard },
+  { label: "Canlı Yayın", href: "/admin/live", icon: Sliders },
+  { label: "Yayın Geçmişi", href: "/admin/schedule", icon: Calendar },
+  { label: "Topluluk Oyun Önerileri", href: "/admin/suggestions", icon: ThumbsUp },
+  { label: "Ayarlar", href: "/admin/settings", icon: Settings },
 ];
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {

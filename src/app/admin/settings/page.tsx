@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { AdminSettingsControls } from "@/features/admin/components/admin-settings-controls";
 
 export const metadata: Metadata = {
-  title: "Ayarlar · Admin",
-  description: "Zehragn Admin Panel Ayarlar ve Senkronizasyon.",
+  title: "Ayarlar · Yönetim",
+  description: "Zehragn Yönetim Paneli Sistem Ayarları.",
 };
 
 export default function AdminSettingsPage() {

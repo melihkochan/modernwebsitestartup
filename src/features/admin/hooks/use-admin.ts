@@ -1,27 +1,54 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
 import { adminRepository } from "../services/admin-repository";
 
 /**
- * Hook to retrieve live system logs for the dashboard output panel.
+ * Hook to retrieve all game suggestions with Steam details.
  */
-export function useSystemLogs() {
+export function useAdminSuggestions() {
   return useQuery({
-    queryKey: queryKeys.admin.logs(),
-    queryFn: () => adminRepository.getSystemLogs(),
-    refetchInterval: 10000, // Refresh every 10 seconds
+    queryKey: ["admin", "suggestions"],
+    queryFn: () => adminRepository.getSuggestions(),
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 }
 
 /**
- * Hook to retrieve streaming system vitals (bitrate, fps, cpu, memory, dropping frames).
- * Polls more frequently to keep admin metrics reactive.
+ * Hook to approve a community suggestion.
  */
-export function useSystemVitals() {
+export function useApproveSuggestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => adminRepository.approveSuggestion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["community"] });
+    },
+  });
+}
+
+/**
+ * Hook to delete a community suggestion.
+ */
+export function useDeleteSuggestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => adminRepository.deleteSuggestion(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["community"] });
+    },
+  });
+}
+
+/**
+ * Hook to retrieve the stream history catalog.
+ */
+export function useStreamHistory() {
   return useQuery({
-    queryKey: queryKeys.admin.vitals(),
-    queryFn: () => adminRepository.getVitals(),
-    refetchInterval: 2000, // Refresh every 2 seconds for vital system stats
+    queryKey: ["admin", "stream-history"],
+    queryFn: () => adminRepository.getStreamHistory(),
   });
 }
 
@@ -45,12 +72,22 @@ export function useTriggerCreatorSync() {
   return useMutation({
     mutationFn: () => adminRepository.triggerSync(),
     onSuccess: (data) => {
-      // Direct updates and cache invalidation
       queryClient.setQueryData(["admin", "creator-sync-status"], data);
       queryClient.invalidateQueries({ queryKey: ["admin"] });
       queryClient.invalidateQueries({ queryKey: ["live"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
+  });
+}
+
+/**
+ * Hook to retrieve aggregated publisher channel statistics.
+ */
+export function useCreatorStats() {
+  return useQuery({
+    queryKey: ["admin", "creator-stats"],
+    queryFn: () => adminRepository.getCreatorStats(),
+    refetchInterval: 15000, // Poll every 15 seconds
   });
 }
 

@@ -5,7 +5,10 @@ export interface CreatorProfile {
   avatarUrl: string | null;
   bannerUrl: string | null;
   bio: string | null;
-  followerCount: number;
+  // followerCount is null when the Kick API does not expose it via client credentials
+  followerCount: number | null;
+  // subscriberCount from active_subscribers_count field (officially supported)
+  subscriberCount: number | null;
   verified: boolean;
 }
 
@@ -20,7 +23,9 @@ export interface StreamState {
 
 export interface AnalyticsSnapshot {
   viewerCount: number;
-  followerCount: number;
+  // followerCount is null when the Kick API does not expose it
+  followerCount: number | null;
+  subscriberCount: number | null;
   timestamp: string; // ISO Date String
 }
 

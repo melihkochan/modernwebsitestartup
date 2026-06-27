@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -981,6 +981,71 @@ export type Database = {
             referencedRelation: "stream_history"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      subscriber_history: {
+        Row: {
+          id: string
+          timestamp: string
+          active_count: number
+          net_change: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          timestamp?: string
+          active_count?: number
+          net_change?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          timestamp?: string
+          active_count?: number
+          net_change?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          stream_history_id: string | null
+          username: string
+          display_name: string | null
+          content: string
+          sent_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          stream_history_id?: string | null
+          username: string
+          display_name?: string | null
+          content: string
+          sent_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          stream_history_id?: string | null
+          username?: string
+          display_name?: string | null
+          content?: string
+          sent_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_stream_history_id_fkey"
+            columns: ["stream_history_id"]
+            isOneToOne: false
+            referencedRelation: "stream_history"
+            referencedColumns: ["id"]
+          }
         ]
       }
     }
