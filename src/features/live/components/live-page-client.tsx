@@ -107,7 +107,8 @@ export function LivePageClient() {
       };
     });
   });
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialChatLoadRef = useRef(true);
 
   // Simulate scrolling chat
   useEffect(() => {
@@ -139,9 +140,23 @@ export function LivePageClient() {
     return () => clearInterval(interval);
   }, [isSimulatedLive]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages (container only, never the viewport)
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    // Tolerance (80px) to check if user is currently near the bottom of the feed
+    const isAtBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+
+    // Only scroll if it's the first render or the user is already viewing the bottom
+    if (isInitialChatLoadRef.current || isAtBottom) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: isInitialChatLoadRef.current ? "auto" : "smooth",
+      });
+      isInitialChatLoadRef.current = false;
+    }
   }, [chatMessages]);
 
   const togglePlay = () => setIsPlaying(!isPlaying);
@@ -389,7 +404,10 @@ export function LivePageClient() {
                   </div>
 
                   {/* Chat Message List */}
-                  <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3.5 scrollbar-thin scrollbar-thumb-[var(--border-default)]">
+                  <div 
+                    ref={chatContainerRef}
+                    className="flex-1 overflow-y-auto p-4 flex flex-col gap-3.5 scrollbar-thin scrollbar-thumb-[var(--border-default)]"
+                  >
                     <AnimatePresence initial={false}>
                       {chatMessages.map((msg) => (
                         <motion.div
@@ -416,7 +434,6 @@ export function LivePageClient() {
                         </motion.div>
                       ))}
                     </AnimatePresence>
-                    <div ref={chatEndRef} />
                   </div>
 
                   {/* Chat Input Placeholder */}
