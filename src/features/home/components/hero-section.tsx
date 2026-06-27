@@ -157,18 +157,18 @@ export function HeroSection() {
         {/* Subtitle */}
         <SlideUp delay={0.55} distance={16}>
           <p
-            className="mt-6 text-sm tracking-[0.28em] uppercase text-[var(--text-tertiary)] font-light"
-            style={{ fontFamily: "var(--font-inter)" }}
+            className="mt-6 text-xs sm:text-sm tracking-[0.28em] uppercase font-semibold"
+            style={{ fontFamily: "var(--font-inter)", color: "var(--accent-primary)" }}
           >
             Official Streaming Universe
           </p>
         </SlideUp>
-
+ 
         {/* Tagline */}
         <SlideUp delay={0.65} distance={12}>
           <p
-            className="mt-3 max-w-lg text-base text-[var(--text-secondary)] leading-relaxed"
-            style={{ fontFamily: "var(--font-inter)" }}
+            className="mt-4 max-w-lg text-sm sm:text-base leading-relaxed"
+            style={{ fontFamily: "var(--font-inter)", color: "#e4e4e7" }}
           >
             Live stats, community, clips, and everything else — in one cinematic experience.
           </p>

@@ -57,13 +57,13 @@ export function CommunityPreviewSection() {
                 <div>
                   <span
                     className="label-eyebrow"
-                    style={{ fontFamily: "var(--font-inter)" }}
+                    style={{ fontFamily: "var(--font-inter)", color: "var(--accent-primary)" }}
                   >
                     Top Voted Game
                   </span>
                   <h3
-                    className="mt-2 text-xl font-bold text-[var(--text-primary)]"
-                    style={{ fontFamily: "var(--font-outfit)" }}
+                    className="mt-2 text-xl font-bold"
+                    style={{ fontFamily: "var(--font-outfit)", color: "#ededed" }}
                   >
                     {topSuggestion.game}
                   </h3>
@@ -76,7 +76,7 @@ export function CommunityPreviewSection() {
 
                 {/* Progress bar */}
                 <div>
-                  <div className="flex justify-between text-xs text-[var(--text-tertiary)] mb-2">
+                  <div className="flex justify-between text-xs mb-2" style={{ color: "#a1a1aa" }}>
                     <span>{topSuggestion.votes.toLocaleString()} votes</span>
                     <span>
                       {totalVotes > 0 ? Math.round((topSuggestion.votes / totalVotes) * 100) : 0}%
@@ -93,12 +93,13 @@ export function CommunityPreviewSection() {
                 </div>
 
                 <div className="mt-auto flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-tertiary)]">
+                  <span className="text-xs" style={{ color: "#a1a1aa" }}>
                     by {topSuggestion.submittedBy}
                   </span>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-primary)]/50 hover:text-[var(--accent-primary)]"
+                    className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-default)] px-3 py-1.5 text-xs font-medium transition-colors hover:border-[var(--accent-primary)]/50 hover:text-[var(--accent-primary)]"
+                    style={{ color: "#d4d4d8" }}
                   >
                     <ThumbsUp className="h-3.5 w-3.5" aria-hidden />
                     Vote
@@ -107,7 +108,7 @@ export function CommunityPreviewSection() {
               </GlassCard>
             ) : (
               <GlassCard intensity="medium" padding="md" className="flex items-center justify-center">
-                <p className="text-sm text-[var(--text-tertiary)]">No suggestions yet</p>
+                <p className="text-sm" style={{ color: "#a1a1aa" }}>No suggestions yet</p>
               </GlassCard>
             )}
 
@@ -119,13 +120,13 @@ export function CommunityPreviewSection() {
                 <div>
                   <span
                     className="label-eyebrow"
-                    style={{ fontFamily: "var(--font-inter)" }}
+                    style={{ fontFamily: "var(--font-inter)", color: "var(--accent-primary)" }}
                   >
                     Active Poll
                   </span>
                   <h3
-                    className="mt-2 text-base font-semibold text-[var(--text-primary)] leading-snug"
-                    style={{ fontFamily: "var(--font-outfit)" }}
+                    className="mt-2 text-base font-semibold leading-snug"
+                    style={{ fontFamily: "var(--font-outfit)", color: "#ededed" }}
                   >
                     {poll.question}
                   </h3>
@@ -139,10 +140,10 @@ export function CommunityPreviewSection() {
                     return (
                       <div key={opt.id}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-[var(--text-secondary)] truncate max-w-[160px]">
+                          <span className="truncate max-w-[160px]" style={{ color: "#d4d4d8" }}>
                             {opt.label}
                           </span>
-                          <span className="text-[var(--text-tertiary)] shrink-0 ml-2">
+                          <span className="shrink-0 ml-2" style={{ color: "#a1a1aa" }}>
                             {pct}%
                           </span>
                         </div>
@@ -162,14 +163,14 @@ export function CommunityPreviewSection() {
                   })}
                 </div>
 
-                <div className="mt-auto flex items-center justify-between text-xs text-[var(--text-tertiary)]">
+                <div className="mt-auto flex items-center justify-between text-xs" style={{ color: "#a1a1aa" }}>
                   <span>{poll.totalVotes.toLocaleString()} votes</span>
                   {poll.endsIn && <span>Ends in {poll.endsIn}</span>}
                 </div>
               </GlassCard>
             ) : (
               <GlassCard intensity="medium" padding="md" className="flex items-center justify-center">
-                <p className="text-sm text-[var(--text-tertiary)]">No active poll</p>
+                <p className="text-sm" style={{ color: "#a1a1aa" }}>No active poll</p>
               </GlassCard>
             )}
 
@@ -181,13 +182,13 @@ export function CommunityPreviewSection() {
                 <div>
                   <span
                     className="label-eyebrow"
-                    style={{ fontFamily: "var(--font-inter)" }}
+                    style={{ fontFamily: "var(--font-inter)", color: "var(--accent-primary)" }}
                   >
                     Fan Messages
                   </span>
                   <div className="mt-1 flex items-center gap-1.5">
-                    <MessageSquare className="h-3.5 w-3.5 text-[var(--text-tertiary)]" aria-hidden />
-                    <span className="text-xs text-[var(--text-tertiary)]">Latest from the community</span>
+                    <MessageSquare className="h-3.5 w-3.5" style={{ color: "#a1a1aa" }} aria-hidden />
+                    <span className="text-xs" style={{ color: "#a1a1aa" }}>Latest from the community</span>
                   </div>
                 </div>
 
@@ -202,17 +203,17 @@ export function CommunityPreviewSection() {
                           <span className="text-xs font-semibold text-[var(--accent-primary)] truncate">
                             {msg.username}
                           </span>
-                          <span className="text-[10px] text-[var(--text-tertiary)] shrink-0">
+                          <span className="text-[10px] shrink-0" style={{ color: "#a1a1aa" }}>
                             {msg.time}
                           </span>
                         </div>
-                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2">
+                        <p className="text-xs leading-relaxed line-clamp-2" style={{ color: "#d4d4d8" }}>
                           {msg.message}
                         </p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-[var(--text-tertiary)]">No messages yet</p>
+                    <p className="text-sm" style={{ color: "#a1a1aa" }}>No messages yet</p>
                   )}
                 </div>
               </GlassCard>
