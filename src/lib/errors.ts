@@ -4,7 +4,7 @@ import { logger } from "@/lib/logger";
  * Base class for all application specific errors.
  */
 export class ApplicationError extends Error {
-  constructor(message: string, public code: string = "APP_ERROR", public details?: any) {
+  constructor(message: string, public code: string = "APP_ERROR", public details?: unknown) {
     super(message);
     this.name = this.constructor.name;
     Object.setPrototypeOf(this, new.target.prototype);
@@ -15,7 +15,7 @@ export class ApplicationError extends Error {
  * Errors occurring within the Repository Layer (e.g. database query failures).
  */
 export class RepositoryError extends ApplicationError {
-  constructor(message: string, code: string = "REPOSITORY_ERROR", details?: any) {
+  constructor(message: string, code: string = "REPOSITORY_ERROR", details?: unknown) {
     super(message, code, details);
   }
 }
@@ -24,7 +24,7 @@ export class RepositoryError extends ApplicationError {
  * Errors occurring due to network failures or API timeouts.
  */
 export class NetworkError extends ApplicationError {
-  constructor(message: string, code: string = "NETWORK_ERROR", details?: any) {
+  constructor(message: string, code: string = "NETWORK_ERROR", details?: unknown) {
     super(message, code, details);
   }
 }

@@ -2,7 +2,6 @@ import { USE_MOCK_DATA } from "@/config/data-source";
 import { createClient } from "@/lib/supabase/client";
 import { RepositoryError } from "@/lib/errors";
 import type { StreamInfo, ScheduleItem } from "../validators/live-schemas";
-import type { Database } from "@/types/database";
 
 export interface LiveRepository {
   getStreamInfo(): Promise<StreamInfo>;
@@ -44,43 +43,43 @@ const mockLiveRepository: LiveRepository = {
 
 const supabaseLiveRepository: LiveRepository = {
   async getStreamInfo(): Promise<StreamInfo> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("stream_state")
         .select("*")
-        .maybeSingle() as Promise<{ data: Database["public"]["Tables"]["stream_state"]["Row"] | null; error: any }>);
+        .maybeSingle();
 
       if (error) throw new RepositoryError(error.message, "FETCH_STREAM_INFO_FAILED", error);
       if (!data) return MOCK_STREAM_INFO;
 
       return {
-        isLive: data.is_live,
-        viewerCount: data.viewer_count,
+        isLive: data.is_live ?? false,
+        viewerCount: data.viewer_count ?? 0,
         currentGame: data.current_game || "Offline",
         streamTitle: data.stream_title || "",
         startedAt: data.started_at || "",
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError("Failed to fetch stream info", "FETCH_STREAM_INFO_FAILED", err);
     }
   },
 
   async getSchedule(): Promise<ScheduleItem[]> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
       // In a real schema, we'd query the weekly schedule. For now, fetch from a mock schedule table or return mock fallback
-      const { data, error } = await (supabase
+      const { error } = await supabase
         .from("faq") // Fallback mock table query for infrastructure check
         .select("*")
-        .limit(1) as Promise<{ data: any; error: any }>);
+        .limit(1);
 
       if (error) throw new RepositoryError(error.message, "FETCH_SCHEDULE_FAILED", error);
 
       // Return mock schedule data for structural stability until migrations are fully populated
       return MOCK_SCHEDULE;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError("Failed to fetch stream schedule", "FETCH_SCHEDULE_FAILED", err);
     }

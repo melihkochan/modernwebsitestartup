@@ -161,10 +161,10 @@ const supabaseSetupRepository: SetupRepository = {
     const supabase = createClient();
     try {
       // Setup products can be fetched from database structure or fallback to mocks
-      const { data, error } = await supabase.from("faq").select("*").limit(1);
+      const { error } = await supabase.from("faq").select("*").limit(1);
       if (error) throw new RepositoryError(error.message, "FETCH_SETUP_FAILED", error);
       return mockSetupRepository.getProducts(category);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError("Failed to fetch setup products", "FETCH_SETUP_FAILED", err);
     }

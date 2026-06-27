@@ -9,21 +9,17 @@ import {
   Maximize2,
   Settings,
   Users,
-  Eye,
   Clock,
   Calendar,
-  Heart,
   MessageSquare,
   Radio,
   Gamepad2,
   Sparkles,
   ExternalLink,
   ChevronRight,
-  TrendingUp,
 } from "lucide-react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Container } from "@/components/layout/container";
-import { Section } from "@/components/layout/section";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

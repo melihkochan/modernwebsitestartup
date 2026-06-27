@@ -110,11 +110,11 @@ const supabaseGalleryRepository: GalleryRepository = {
   async getItems(category): Promise<GalleryItem[]> {
     const supabase = createClient();
     try {
-      const { data, error } = await supabase.from("gallery").select("*");
+      const { error } = await supabase.from("gallery").select("*");
       if (error) throw new RepositoryError(error.message, "FETCH_GALLERY_FAILED", error);
       // Fallback structure check
       return mockGalleryRepository.getItems(category);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError("Failed to fetch gallery items", "FETCH_GALLERY_FAILED", err);
     }

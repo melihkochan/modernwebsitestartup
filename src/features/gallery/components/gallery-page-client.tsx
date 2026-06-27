@@ -7,17 +7,14 @@ import {
   ChevronRight,
   Maximize2,
   Download,
-  Share2,
   Grid,
   Image as ImageIcon,
   Camera,
   Paintbrush,
   Sparkles,
-  Info,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Container } from "@/components/layout/container";
-import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -176,6 +173,7 @@ export function GalleryPageClient() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedItemIndex, filteredItems]);
 
   const activeItem = selectedItemIndex !== null ? filteredItems[selectedItemIndex] : null;

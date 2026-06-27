@@ -3,13 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
-  Award,
-  Sparkles,
   Clock,
-  Gamepad2,
-  Tv,
-  Heart,
-  TrendingUp,
   ChevronDown,
   ChevronUp,
   Radio,
@@ -213,7 +207,7 @@ export function TimelinePageClient() {
         {/* Central Vertical Timeline */}
         <div className="relative border-l border-[var(--border-default)] ml-4 sm:ml-6 flex flex-col gap-12 py-4">
           <AnimatePresence mode="popLayout">
-            {filteredEvents.map((evt, idx) => {
+            {filteredEvents.map((evt) => {
               const isExpanded = !!expandedEventIds[evt.id];
               return (
                 <motion.div

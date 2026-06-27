@@ -2,7 +2,6 @@ import { USE_MOCK_DATA } from "@/config/data-source";
 import { createClient } from "@/lib/supabase/client";
 import { RepositoryError } from "@/lib/errors";
 import type { FaqItem } from "../validators/faq-schemas";
-import type { Database } from "@/types/database";
 
 export interface FaqRepository {
   getFAQItems(category: string): Promise<FaqItem[]>;
@@ -76,26 +75,26 @@ const mockFaqRepository: FaqRepository = {
 
 const supabaseFaqRepository: FaqRepository = {
   async getFAQItems(category): Promise<FaqItem[]> {
-    const supabase = createClient() as any;
+    const supabase = createClient();
     try {
-      const { data, error } = await (supabase
+      const { data, error } = await supabase
         .from("faq")
         .select("*")
-        .order("order_weight", { ascending: true }) as Promise<{ data: Database["public"]["Tables"]["faq"]["Row"][] | null; error: any }>);
+        .order("order_weight", { ascending: true });
 
       if (error) throw new RepositoryError(error.message, "FETCH_FAQ_FAILED", error);
       if (!data || data.length === 0) return mockFaqRepository.getFAQItems(category);
 
       const items = data.map((d) => ({
         id: d.id,
-        category: d.category as any,
+        category: d.category as FaqItem["category"],
         question: d.question,
         answer: d.answer,
       }));
 
       if (category === "all") return items;
       return items.filter((faq) => faq.category === category);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError("Failed to fetch FAQ items", "FETCH_FAQ_FAILED", err);
     }

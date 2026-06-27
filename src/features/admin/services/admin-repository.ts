@@ -2,7 +2,6 @@ import { USE_MOCK_DATA } from "@/config/data-source";
 import { createClient } from "@/lib/supabase/client";
 import { RepositoryError } from "@/lib/errors";
 import type { SystemLog, SystemVitals } from "../validators/admin-schemas";
-import type { Database } from "@/types/database";
 
 export interface CreatorSyncStatus {
   status: "success" | "failed" | "syncing" | "idle";

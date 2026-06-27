@@ -130,10 +130,10 @@ const supabaseTimelineRepository: TimelineRepository = {
   async getMilestones(year): Promise<TimelineEvent[]> {
     const supabase = createClient();
     try {
-      const { data, error } = await supabase.from("timeline").select("*");
+      const { error } = await supabase.from("timeline").select("*");
       if (error) throw new RepositoryError(error.message, "FETCH_TIMELINE_FAILED", error);
       return mockTimelineRepository.getMilestones(year);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError("Failed to fetch timeline milestones", "FETCH_TIMELINE_FAILED", err);
     }
