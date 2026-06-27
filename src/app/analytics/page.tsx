@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/layout/navbar";
+import { NavbarLiveWrapper } from "@/components/layout/navbar-live-wrapper";
 import { Footer } from "@/components/layout/footer";
 import { AnalyticsPageClient } from "@/features/analytics/components/analytics-page-client";
-import { MOCK_STREAM } from "@/features/home/data/mock-data";
 
 export const metadata: Metadata = {
   title: "Stream Analytics",
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 export default function AnalyticsPage() {
   return (
     <>
-      <Navbar isLive={MOCK_STREAM.isLive} viewerCount={MOCK_STREAM.viewerCount} />
+      <NavbarLiveWrapper />
       <main id="main-content">
         <AnalyticsPageClient />
       </main>

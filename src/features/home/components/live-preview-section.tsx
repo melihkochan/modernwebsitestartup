@@ -9,9 +9,23 @@ import { Section } from "@/components/layout/section";
 import { HoverGlow, RevealOnScroll, SlideUp } from "@/components/motion";
 import { siteConfig } from "@/config/site";
 import { formatNumber } from "@/lib/utils";
-import { MOCK_STREAM } from "../data/mock-data";
+import { useStreamInfo } from "@/features/live/hooks/use-live";
 
 export function LivePreviewSection() {
+  const { data: streamInfo, isLoading } = useStreamInfo();
+
+  const isLive = streamInfo?.isLive ?? false;
+  const viewerCount = streamInfo?.viewerCount ?? 0;
+  const streamTitle = streamInfo?.streamTitle ?? "";
+  const currentGame = streamInfo?.currentGame ?? "Offline";
+  const startedAt = streamInfo?.startedAt ?? "";
+
+  // Derive a friendly "duration" label from startedAt if present
+  const durationLabel = startedAt || "—";
+
+  // Skeleton pulse class for loading state
+  const skeletonCls = "animate-pulse rounded bg-[var(--bg-overlay)]";
+
   return (
     <Section padding="lg" divided>
       <Container>
@@ -24,10 +38,10 @@ export function LivePreviewSection() {
                 className="relative w-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)]"
                 style={{ aspectRatio: "16 / 9" }}
               >
-                {/* Mock thumbnail background */}
+                {/* Thumbnail background */}
                 <div
                   className="absolute inset-0"
-                  style={{ background: MOCK_STREAM.thumbnailGradient }}
+                  style={{ background: "linear-gradient(135deg, #1a0533 0%, #0d1117 40%, #0f0a2e 100%)" }}
                 />
 
                 {/* Grid overlay */}
@@ -66,17 +80,10 @@ export function LivePreviewSection() {
 
                 {/* Live badge overlay */}
                 <div className="absolute top-4 left-4">
-                  <LiveBadge isLive={MOCK_STREAM.isLive} variant="compact" />
+                  <LiveBadge isLive={isLive} variant="compact" />
                 </div>
 
-                {/* Duration badge */}
-                <div className="absolute top-4 right-4">
-                  <span className="rounded-[var(--radius-sm)] bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                    {MOCK_STREAM.duration}
-                  </span>
-                </div>
-
-                {/* Bottom info overlay */}
+                {/* Stream title overlay */}
                 <div
                   className="absolute inset-x-0 bottom-0 p-4"
                   style={{
@@ -84,10 +91,14 @@ export function LivePreviewSection() {
                       "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
                   }}
                 >
-                  <p className="text-sm font-semibold text-white line-clamp-1">
-                    {MOCK_STREAM.title}
-                  </p>
-                  <p className="mt-0.5 text-xs text-white/60">{MOCK_STREAM.game}</p>
+                  {isLoading ? (
+                    <div className={`h-4 w-3/4 ${skeletonCls}`} />
+                  ) : (
+                    <p className="text-sm font-semibold text-white line-clamp-1">
+                      {streamTitle || "No active stream"}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-xs text-white/60">{currentGame}</p>
                 </div>
               </div>
             </HoverGlow>
@@ -101,7 +112,7 @@ export function LivePreviewSection() {
                   className="label-eyebrow"
                   style={{ fontFamily: "var(--font-inter)" }}
                 >
-                  Live Now
+                  {isLive ? "Live Now" : "Currently Offline"}
                 </span>
                 <h2
                   className="text-3xl font-bold tracking-tight text-[var(--text-primary)] md:text-4xl"
@@ -109,9 +120,13 @@ export function LivePreviewSection() {
                 >
                   Tune In
                 </h2>
-                <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-md">
-                  {MOCK_STREAM.title}
-                </p>
+                {isLoading ? (
+                  <div className={`h-4 w-full max-w-md ${skeletonCls}`} />
+                ) : (
+                  <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-md">
+                    {streamTitle || "Check back soon for the next stream."}
+                  </p>
+                )}
               </div>
             </SlideUp>
 
@@ -122,19 +137,19 @@ export function LivePreviewSection() {
                   {
                     icon: Users,
                     label: "Viewers",
-                    value: formatNumber(MOCK_STREAM.viewerCount),
+                    value: isLoading ? "—" : formatNumber(viewerCount),
                     accent: "var(--accent-primary)",
                   },
                   {
                     icon: Clock,
-                    label: "Duration",
-                    value: MOCK_STREAM.duration,
+                    label: "Started",
+                    value: isLoading ? "—" : durationLabel,
                     accent: "var(--text-tertiary)",
                   },
                   {
                     icon: Gamepad2,
                     label: "Game",
-                    value: MOCK_STREAM.game,
+                    value: isLoading ? "—" : currentGame,
                     accent: "var(--text-tertiary)",
                   },
                 ].map((stat) => (
@@ -172,10 +187,12 @@ export function LivePreviewSection() {
                   Watch on Kick
                   <ExternalLink className="h-4 w-4" aria-hidden />
                 </a>
-                <span className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-6 py-3 text-sm text-[var(--text-tertiary)]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" aria-hidden />
-                  Started {MOCK_STREAM.startedAt}
-                </span>
+                {startedAt && (
+                  <span className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-6 py-3 text-sm text-[var(--text-tertiary)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" aria-hidden />
+                    Started {startedAt}
+                  </span>
+                )}
               </div>
             </SlideUp>
           </div>

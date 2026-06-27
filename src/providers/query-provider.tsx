@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState, type ReactNode } from "react";
+import { useRealtimeInvalidation } from "@/lib/supabase/realtime-subscriptions";
 
 /**
  * TanStack Query provider with production-optimized defaults.
@@ -51,6 +52,15 @@ function getQueryClient(): QueryClient {
   return browserQueryClient;
 }
 
+/**
+ * Mounts Supabase Realtime subscriptions inside the QueryClient context.
+ * Must be a separate component so it can call useQueryClient() after the provider renders.
+ */
+function RealtimeProvider({ children }: { children: ReactNode }) {
+  useRealtimeInvalidation();
+  return <>{children}</>;
+}
+
 interface QueryProviderProps {
   children: ReactNode;
 }
@@ -61,7 +71,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <RealtimeProvider>
+        {children}
+      </RealtimeProvider>
       {/* DevTools only loaded in development — zero production bundle cost */}
       {process.env.NODE_ENV === "development" && (
         <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />

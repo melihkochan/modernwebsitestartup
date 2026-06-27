@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Navbar } from "@/components/layout/navbar";
+import { NavbarLiveWrapper } from "@/components/layout/navbar-live-wrapper";
 import { Footer } from "@/components/layout/footer";
 import { CommunityPageClient } from "@/features/community/components/community-page-client";
-import { MOCK_STREAM } from "@/features/home/data/mock-data";
 
 export const metadata: Metadata = {
   title: "Community Center",
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 export default function CommunityPage() {
   return (
     <>
-      <Navbar isLive={MOCK_STREAM.isLive} viewerCount={MOCK_STREAM.viewerCount} />
+      <NavbarLiveWrapper />
       <main id="main-content">
         <CommunityPageClient />
       </main>

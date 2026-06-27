@@ -6,7 +6,18 @@ import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { HoverGlow, RevealOnScroll, SlideUp } from "@/components/motion";
 import { formatNumber } from "@/lib/utils";
-import { MOCK_CLIP } from "../data/mock-data";
+
+// Inline clip data — no clips repository in this sprint
+// This section is purely visual/decorative content
+const FEATURED_CLIP = {
+  title: "18 Kill Ace Round in Ranked — Pure Insanity",
+  game: "Valorant",
+  views: 284_000,
+  date: "2 weeks ago",
+  duration: "1:47",
+  likes: 14_200,
+};
+
 
 // Pre-compute particle data outside the component to avoid Math.random() during render
 const PARTICLES = [
@@ -86,7 +97,7 @@ export function FeaturedClipSection() {
                   {/* Duration badge */}
                   <div className="absolute bottom-4 right-4">
                     <span className="rounded-[var(--radius-sm)] bg-black/70 px-2 py-1 text-xs font-mono text-white">
-                      {MOCK_CLIP.duration}
+                      {FEATURED_CLIP.duration}
                     </span>
                   </div>
 
@@ -112,7 +123,7 @@ export function FeaturedClipSection() {
                         className="text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-snug"
                         style={{ fontFamily: "var(--font-outfit)" }}
                       >
-                        {MOCK_CLIP.title}
+                        {FEATURED_CLIP.title}
                       </h2>
                     </div>
                   </SlideUp>
@@ -122,7 +133,7 @@ export function FeaturedClipSection() {
                     <div className="flex flex-wrap gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-subtle)] bg-[var(--bg-overlay)] px-2.5 py-1 text-xs text-[var(--text-secondary)]">
                         <Gamepad2 className="h-3 w-3" aria-hidden />
-                        {MOCK_CLIP.game}
+                        {FEATURED_CLIP.game}
                       </span>
                     </div>
                   </SlideUp>
@@ -139,7 +150,7 @@ export function FeaturedClipSection() {
                           className="text-2xl font-bold text-[var(--text-primary)] tabular-nums"
                           style={{ fontFamily: "var(--font-outfit)" }}
                         >
-                          {formatNumber(MOCK_CLIP.views)}
+                          {formatNumber(FEATURED_CLIP.views)}
                         </span>
                       </div>
                       <div className="flex flex-col gap-1">
@@ -151,7 +162,7 @@ export function FeaturedClipSection() {
                           className="text-2xl font-bold text-[var(--text-primary)] tabular-nums"
                           style={{ fontFamily: "var(--font-outfit)" }}
                         >
-                          {formatNumber(MOCK_CLIP.likes)}
+                          {formatNumber(FEATURED_CLIP.likes)}
                         </span>
                       </div>
                     </div>
@@ -159,7 +170,7 @@ export function FeaturedClipSection() {
 
                   <SlideUp delay={0.45}>
                     <p className="text-xs text-[var(--text-tertiary)]">
-                      Clipped {MOCK_CLIP.date}
+                      Clipped {FEATURED_CLIP.date}
                     </p>
                   </SlideUp>
 

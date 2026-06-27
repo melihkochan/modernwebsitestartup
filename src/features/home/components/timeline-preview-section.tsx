@@ -6,9 +6,29 @@ import { Section } from "@/components/layout/section";
 import { SectionTitle } from "@/components/analytics/section-title";
 import { RevealOnScroll } from "@/components/motion";
 import { cn } from "@/lib/utils";
-import { MOCK_TIMELINE } from "../data/mock-data";
+import { useTimelineMilestones } from "@/features/timeline/hooks/use-timeline";
+
+function TimelineSkeleton() {
+  return (
+    <div className="relative flex gap-8 pb-10">
+      <div className="w-16 shrink-0 flex justify-end">
+        <div className="h-4 w-10 animate-pulse rounded bg-[var(--bg-overlay)]" />
+      </div>
+      <div className="relative flex items-start justify-center w-4 shrink-0 mt-1">
+        <div className="h-2.5 w-2.5 rounded-full bg-[var(--bg-overlay)]" />
+      </div>
+      <div className="flex flex-col gap-2 flex-1">
+        <div className="h-4 w-40 animate-pulse rounded bg-[var(--bg-overlay)]" />
+        <div className="h-3 w-full animate-pulse rounded bg-[var(--bg-overlay)]" />
+        <div className="h-3 w-4/5 animate-pulse rounded bg-[var(--bg-overlay)]" />
+      </div>
+    </div>
+  );
+}
 
 export function TimelinePreviewSection() {
+  const { data: milestones, isLoading } = useTimelineMilestones("all");
+
   return (
     <Section padding="lg" divided>
       {/* Asymmetric background */}
@@ -49,72 +69,76 @@ export function TimelinePreviewSection() {
                 }}
               />
 
-              {MOCK_TIMELINE.map((item, i) => (
-                <RevealOnScroll
-                  key={item.id}
-                  animation="slide-left"
-                  delay={i * 0.08}
-                  threshold={0.1}
-                >
-                  <div className="relative flex gap-8 pb-10 last:pb-0">
-                    {/* Year */}
-                    <div className="w-16 shrink-0 text-right">
-                      <span
-                        className={cn(
-                          "text-sm font-bold tabular-nums",
-                          item.highlight
-                            ? "text-[var(--accent-primary)]"
-                            : "text-[var(--text-tertiary)]"
-                        )}
-                        style={{ fontFamily: "var(--font-outfit)" }}
-                      >
-                        {item.year}
-                      </span>
-                    </div>
+              {isLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <TimelineSkeleton key={i} />
+                  ))
+                : (milestones ?? []).map((item, i) => (
+                    <RevealOnScroll
+                      key={item.id}
+                      animation="slide-left"
+                      delay={i * 0.08}
+                      threshold={0.1}
+                    >
+                      <div className="relative flex gap-8 pb-10 last:pb-0">
+                        {/* Year */}
+                        <div className="w-16 shrink-0 text-right">
+                          <span
+                            className={cn(
+                              "text-sm font-bold tabular-nums",
+                              item.highlight
+                                ? "text-[var(--accent-primary)]"
+                                : "text-[var(--text-tertiary)]"
+                            )}
+                            style={{ fontFamily: "var(--font-outfit)" }}
+                          >
+                            {item.year}
+                          </span>
+                        </div>
 
-                    {/* Dot */}
-                    <div className="relative flex items-start justify-center w-4 shrink-0 mt-1">
-                      <div
-                        className={cn(
-                          "h-2.5 w-2.5 rounded-full border-2 z-10 relative",
-                          item.highlight
-                            ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]"
-                            : "border-[var(--border-strong)] bg-[var(--bg-base)]"
-                        )}
-                      />
-                      {item.highlight && (
-                        <motion.div
-                          className="absolute inset-0 rounded-full bg-[var(--accent-primary)]"
-                          animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeOut",
-                          }}
-                        />
-                      )}
-                    </div>
+                        {/* Dot */}
+                        <div className="relative flex items-start justify-center w-4 shrink-0 mt-1">
+                          <div
+                            className={cn(
+                              "h-2.5 w-2.5 rounded-full border-2 z-10 relative",
+                              item.highlight
+                                ? "border-[var(--accent-primary)] bg-[var(--accent-primary)]"
+                                : "border-[var(--border-strong)] bg-[var(--bg-base)]"
+                            )}
+                          />
+                          {item.highlight && (
+                            <motion.div
+                              className="absolute inset-0 rounded-full bg-[var(--accent-primary)]"
+                              animate={{ scale: [1, 2.5], opacity: [0.4, 0] }}
+                              transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeOut",
+                              }}
+                            />
+                          )}
+                        </div>
 
-                    {/* Content */}
-                    <div className="flex flex-col gap-1.5 pb-2 flex-1">
-                      <h3
-                        className={cn(
-                          "text-sm font-semibold",
-                          item.highlight
-                            ? "text-[var(--text-primary)]"
-                            : "text-[var(--text-secondary)]"
-                        )}
-                        style={{ fontFamily: "var(--font-outfit)" }}
-                      >
-                        {item.title}
-                      </h3>
-                      <p className="text-sm text-[var(--text-tertiary)] leading-relaxed max-w-lg">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                </RevealOnScroll>
-              ))}
+                        {/* Content */}
+                        <div className="flex flex-col gap-1.5 pb-2 flex-1">
+                          <h3
+                            className={cn(
+                              "text-sm font-semibold",
+                              item.highlight
+                                ? "text-[var(--text-primary)]"
+                                : "text-[var(--text-secondary)]"
+                            )}
+                            style={{ fontFamily: "var(--font-outfit)" }}
+                          >
+                            {item.title}
+                          </h3>
+                          <p className="text-sm text-[var(--text-tertiary)] leading-relaxed max-w-lg">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    </RevealOnScroll>
+                  ))}
             </div>
           </div>
         </div>

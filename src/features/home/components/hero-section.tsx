@@ -7,7 +7,7 @@ import { LiveBadge } from "@/components/analytics";
 import { FadeIn, MagneticButton, SlideUp } from "@/components/motion";
 import { siteConfig } from "@/config/site";
 import { formatNumber } from "@/lib/utils";
-import { MOCK_STREAM } from "../data/mock-data";
+import { useStreamInfo } from "@/features/live/hooks/use-live";
 
 /**
  * Hero Section — Full viewport cinematic opener.
@@ -21,6 +21,11 @@ import { MOCK_STREAM } from "../data/mock-data";
  * 6. Content
  */
 export function HeroSection() {
+  const { data: streamInfo } = useStreamInfo();
+
+  const isLive = streamInfo?.isLive ?? false;
+  const viewerCount = streamInfo?.viewerCount ?? 0;
+
   // Use fixed initial values so SSR and client first render are identical.
   // After hydration, useEffect sets the real centre position.
   const mouseX = useMotionValue(760);
@@ -121,8 +126,8 @@ export function HeroSection() {
         {/* Live badge */}
         <FadeIn delay={0.3}>
           <LiveBadge
-            isLive={MOCK_STREAM.isLive}
-            viewerCount={MOCK_STREAM.viewerCount}
+            isLive={isLive}
+            viewerCount={viewerCount}
             variant="full"
           />
         </FadeIn>
@@ -206,7 +211,7 @@ export function HeroSection() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--live-red)] opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--live-red)]" />
               </span>
-              {formatNumber(MOCK_STREAM.viewerCount)} watching right now
+              {viewerCount > 0 ? `${formatNumber(viewerCount)} watching right now` : "Stream offline"}
             </span>
           </p>
         </FadeIn>
