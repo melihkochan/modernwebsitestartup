@@ -192,14 +192,10 @@ const supabaseCommunityRepository: CommunityRepository = {
     try {
       const { error } = await supabase.rpc("increment_suggestion_votes", { suggestion_id: id });
       if (error) {
-        // Fallback standard update if custom RPC doesn't exist yet
-        const { error: fallbackError } = await supabase
-          .from("game_suggestions")
-          .update({ votes_count: 100 }) // Incremented locally / stub
-          .eq("id", id);
-        if (fallbackError) throw new RepositoryError(fallbackError.message, "UPVOTE_FAILED", fallbackError);
+        throw new RepositoryError(error.message, "UPVOTE_FAILED", error);
       }
     } catch (err) {
+      if (err instanceof RepositoryError) throw err;
       const message = err instanceof Error ? err.message : "Failed to cast upvote";
       throw new RepositoryError(message, "UPVOTE_FAILED", err);
     }
