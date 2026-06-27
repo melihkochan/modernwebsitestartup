@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { resilientFetch } from "@/lib/supabase/resilient-fetch";
 
+// Circuit Breaker / Cooldown state to prevent overloading the request queue when Supabase is down
+let lastUnreachableTime = 0;
+const SERVICE_COOLDOWN_MS = 15000; // 15 seconds cooldown
+
 /**
  * Next.js Middleware/Proxy — Session Management & Authentication Check
  *
@@ -31,7 +35,8 @@ export default async function proxy(request: NextRequest) {
         },
       },
       global: {
-        fetch: resilientFetch,
+        // Shorter 2-second timeout and 0 retries for middleware to keep response times fast
+        fetch: (input, init) => resilientFetch(input, init, 2000, 0),
       },
     }
   );
@@ -39,16 +44,25 @@ export default async function proxy(request: NextRequest) {
   let user = null;
   let isUnreachable = false;
 
-  // Refresh user token on every request - single source of truth
-  // Wrapped in try/catch to gracefully handle connection timeouts and network errors
-  try {
-    const {
-      data: { user: fetchedUser },
-    } = await supabase.auth.getUser();
-    user = fetchedUser;
-  } catch (err) {
-    console.error("Supabase Auth service is temporarily unreachable in proxy:", err);
+  const now = Date.now();
+  if (now - lastUnreachableTime < SERVICE_COOLDOWN_MS) {
     isUnreachable = true;
+  } else {
+    // Refresh user token on every request - single source of truth
+    // Wrapped in try/catch to gracefully handle connection timeouts and network errors
+    try {
+      const {
+        data: { user: fetchedUser },
+      } = await supabase.auth.getUser();
+      user = fetchedUser;
+    } catch (err) {
+      console.error(
+        "Supabase Auth service is temporarily unreachable in proxy:",
+        err instanceof Error ? err.message : err
+      );
+      isUnreachable = true;
+      lastUnreachableTime = Date.now();
+    }
   }
 
   const pathname = request.nextUrl.pathname;
