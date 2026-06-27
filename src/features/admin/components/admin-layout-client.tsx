@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,25 +26,20 @@ interface AdminSidebarItem {
 }
 
 const SIDEBAR_ITEMS: AdminSidebarItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Live Controls", href: "#live", icon: Sliders },
-  { label: "Schedule", href: "#schedule", icon: Calendar },
-  { label: "Suggestions", href: "#suggestions", icon: ThumbsUp },
-  { label: "Polls", href: "#polls", icon: Vote },
-  { label: "Settings", href: "#settings", icon: Settings },
+  { label: "Kontrol Paneli", href: "/admin", icon: LayoutDashboard },
+  { label: "Yayın Kontrolleri", href: "/admin/live", icon: Sliders },
+  { label: "Yayın Akışı", href: "/admin/schedule", icon: Calendar },
+  { label: "Öneri Havuzu", href: "/admin/suggestions", icon: ThumbsUp },
+  { label: "Topluluk Anketleri", href: "/admin/polls", icon: Vote },
+  { label: "Ayarlar & Senkron", href: "/admin/settings", icon: Settings },
 ];
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
-  const [activeItem, setActiveItem] = useState("Dashboard");
+  const pathname = usePathname();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { data: profile } = useCurrentProfile();
   const { data: permissions } = usePermissions();
   const { logout } = useAuth();
-
-  const handleNavClick = (label: string) => {
-    setActiveItem(label);
-    setMobileSidebarOpen(false);
-  };
 
   const handleLogout = async () => {
     try {
@@ -64,7 +60,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
             className="text-lg font-bold text-[var(--text-primary)] tracking-tight hover:opacity-80 transition-opacity"
             style={{ fontFamily: "var(--font-outfit)" }}
           >
-            Zehragn Admin
+            Zehragn Yönetim
           </Link>
           <button
             onClick={() => setMobileSidebarOpen(false)}
@@ -83,10 +79,10 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-xs font-bold text-[var(--text-primary)] truncate">{profile?.username || "Loading..."}</span>
+            <span className="text-xs font-bold text-[var(--text-primary)] truncate">{profile?.username || "Yükleniyor..."}</span>
             <span className="text-[10px] text-[var(--text-tertiary)] flex items-center gap-1 font-semibold uppercase">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {permissions || "Admin"}
+              {permissions === "admin" ? "Yönetici" : permissions === "moderator" ? "Moderatör" : "Yönetici"}
             </span>
           </div>
         </div>
@@ -95,12 +91,12 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
         <nav className="flex flex-col gap-1 px-4">
           {SIDEBAR_ITEMS.map((item) => {
             const IconComp = item.icon;
-            const isActive = activeItem === item.label;
+            const isActive = pathname === item.href;
             return (
-              <a
+              <Link
                 key={item.label}
                 href={item.href}
-                onClick={() => handleNavClick(item.label)}
+                onClick={() => setMobileSidebarOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-2.5 text-xs font-semibold rounded-lg transition-all",
                   isActive
@@ -110,7 +106,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
               >
                 <IconComp className="w-4 h-4 shrink-0" />
                 {item.label}
-              </a>
+              </Link>
             );
           })}
         </nav>
@@ -123,7 +119,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
           className="flex items-center gap-3 px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)] rounded-lg transition-all"
         >
           <ArrowLeft className="w-4 h-4 shrink-0" />
-          Public Website
+          Ana Sayfaya Dön
         </Link>
         <button
           type="button"
@@ -131,7 +127,7 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
           className="flex items-center gap-3 px-4 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all text-left w-full cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          Çıkış Yap / Logout
+          Oturumu Kapat
         </button>
       </div>
     </div>
