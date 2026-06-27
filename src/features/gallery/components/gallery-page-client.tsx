@@ -6,280 +6,308 @@ import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
-  Download,
-  Grid,
-  Image as ImageIcon,
-  Camera,
-  Paintbrush,
-  Sparkles,
+  ImageIcon,
+  RefreshCw,
+  Play,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Container } from "@/components/layout/container";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useGalleryItems } from "../hooks/use-gallery";
+import {
+  GALLERY_CATEGORY_LABELS,
+  type GalleryCategory,
+} from "@/features/media/types/media-types";
 
 // ---------------------------------------------------------------------------
-// Mock Data for Gallery
+// Kategori Sekme Listesi
 // ---------------------------------------------------------------------------
 
-interface GalleryItem {
-  id: string;
-  category: "setups" | "irl" | "highlights" | "fanart";
-  aspect: "landscape" | "portrait" | "square";
-  gradient: string;
-  label: string;
-  date: string;
-  details: string;
-}
-
-const GALLERY_CATEGORIES = [
-  { id: "all", label: "All Items", icon: Grid },
-  { id: "setups", label: "Setups", icon: Sparkles },
-  { id: "irl", label: "IRL & Events", icon: Camera },
-  { id: "highlights", label: "Highlights", icon: ImageIcon },
-  { id: "fanart", label: "Fan Art", icon: Paintbrush },
-] as const;
-
-const MOCK_GALLERY: GalleryItem[] = [
-  {
-    id: "gal-1",
-    category: "setups",
-    aspect: "landscape",
-    gradient: "linear-gradient(135deg, #1a0533 0%, #2d0f5e 50%, #0d0d2e 100%)",
-    label: "Zehragn Dual PC Setup Reveal",
-    date: "June 2026",
-    details: "The ultimate streaming powerhouse setup featuring Ryzen 7950X, RTX 4090, and dedicated capture card system.",
-  },
-  {
-    id: "gal-2",
-    category: "irl",
-    aspect: "portrait",
-    gradient: "linear-gradient(135deg, #0a1628 0%, #1e3a5f 50%, #051022 100%)",
-    label: "ZehrArmy Meetup at Gamescom",
-    date: "August 2025",
-    details: "Incredible turnout at the main hall! It was wonderful meeting so many community members in person.",
-  },
-  {
-    id: "gal-3",
-    category: "highlights",
-    aspect: "square",
-    gradient: "linear-gradient(135deg, #0d1a0d 0%, #1a3d1a 50%, #082008 100%)",
-    label: "Radiant Promotion Celebration Screen",
-    date: "May 2026",
-    details: "After weeks of grinding solo queues, we finally secured the Radiant rank live with 15k active viewers.",
-  },
-  {
-    id: "gal-4",
-    category: "fanart",
-    aspect: "landscape",
-    gradient: "linear-gradient(135deg, #2d0a1a 0%, #5e1f3d 50%, #1a050f 100%)",
-    label: "Zehragn Anime Digital Drawing",
-    date: "April 2026",
-    details: "Beautiful custom digital canvas illustration sent in by community moderator SniperX.",
-  },
-  {
-    id: "gal-5",
-    category: "setups",
-    aspect: "portrait",
-    gradient: "linear-gradient(135deg, #0a1a2d 0%, #1f3d5e 50%, #050f1a 100%)",
-    label: "Ambient Setup Glow in Dark",
-    date: "March 2026",
-    details: "Late night vibes with custom neon green and deep violet lighting bars around the studio deck.",
-  },
-  {
-    id: "gal-6",
-    category: "irl",
-    aspect: "square",
-    gradient: "linear-gradient(135deg, #1a0a2d 0%, #3d1f5e 50%, #0f051a 100%)",
-    label: "Signing merch at Kick Finals",
-    date: "November 2025",
-    details: "Signed over 500 cards and shirts. Huge thanks to everyone who waited in queue!",
-  },
-  {
-    id: "gal-7",
-    category: "highlights",
-    aspect: "landscape",
-    gradient: "linear-gradient(135deg, #1a1a0a 0%, #3d3d1f 50%, #0d0d05 100%)",
-    label: "Charity Stream Milestone Chart",
-    date: "December 2025",
-    details: "Raised over $25,000 for children's hospitals during our annual 24-hour charity broadcast.",
-  },
-  {
-    id: "gal-8",
-    category: "fanart",
-    aspect: "portrait",
-    gradient: "linear-gradient(135deg, #0a1a1a 0%, #1f3d3d 50%, #050d0d 100%)",
-    label: "ZehrArmy Logo Fan Concept",
-    date: "February 2026",
-    details: "Futuristic coat of arms concept made by community designer Ayz_Design.",
-  },
-  {
-    id: "gal-9",
-    category: "setups",
-    aspect: "landscape",
-    gradient: "linear-gradient(135deg, #1a0d00 0%, #3d2000 50%, #0d0600 100%)",
-    label: "Custom Custom Keyboard Macros Detail",
-    date: "January 2026",
-    details: "Visual macro keys mapping close-up. Custom switches lubed for stream quietness.",
-  },
+const CATEGORIES: Array<{ id: GalleryCategory | "hepsi"; label: string }> = [
+  { id: "hepsi", label: "Tümü" },
+  { id: "yayin", label: "Yayın" },
+  { id: "hayran-sanati", label: "Hayran Sanatı" },
+  { id: "irl", label: "IRL" },
+  { id: "etkinlik", label: "Etkinlik" },
+  { id: "diger", label: "Diğer" },
 ];
 
-export function GalleryPageClient() {
-  const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
-  const [zoomScale, setZoomScale] = useState(1);
+// ---------------------------------------------------------------------------
+// Galeri Kartı Bileşeni
+// ---------------------------------------------------------------------------
 
-  // Filtered gallery items
-  const filteredItems = MOCK_GALLERY.filter((item) =>
-    activeCategory === "all" ? true : item.category === activeCategory
+interface GalleryCardProps {
+  imageUrl: string;
+  thumbnailUrl?: string | null;
+  title: string;
+  altText?: string | null;
+  category: string;
+  createdAt: string;
+  width?: number | null;
+  height?: number | null;
+  onClick: () => void;
+}
+
+const isVideoUrl = (url: string) => {
+  const lowercase = url.toLowerCase();
+  return (
+    lowercase.endsWith(".mp4") ||
+    lowercase.endsWith(".webm") ||
+    lowercase.endsWith(".mov") ||
+    (lowercase.includes("/storage/v1/object/public/gallery/") &&
+      !lowercase.endsWith(".webp") &&
+      !lowercase.endsWith(".png") &&
+      !lowercase.endsWith(".jpg") &&
+      !lowercase.endsWith(".jpeg") &&
+      !lowercase.endsWith(".gif"))
   );
+};
 
-  const openLightbox = (id: string) => {
-    const index = filteredItems.findIndex((item) => item.id === id);
-    if (index !== -1) {
-      setSelectedItemIndex(index);
-      setZoomScale(1);
-    }
+function GalleryCard({
+  imageUrl,
+  thumbnailUrl,
+  title,
+  altText,
+  category,
+  createdAt,
+  width,
+  height,
+  onClick,
+}: GalleryCardProps) {
+  const displayUrl = thumbnailUrl && thumbnailUrl.trim() !== "" ? thumbnailUrl : imageUrl;
+  const isVideo = isVideoUrl(displayUrl);
+
+  const categoryLabel =
+    GALLERY_CATEGORY_LABELS[category as GalleryCategory] ?? category;
+  const dateLabel = new Date(createdAt).toLocaleDateString("tr-TR", {
+    year: "numeric",
+    month: "long",
+  });
+
+  const imgWidth = width ?? 800;
+  const imgHeight = height ?? 600;
+  const aspectRatio =
+    imgHeight > imgWidth * 1.2
+      ? "aspect-[3/4]"
+      : imgHeight < imgWidth * 0.6
+        ? "aspect-video"
+        : "aspect-square";
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick()}
+      className="break-inside-avoid relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-default)] bg-[var(--bg-surface)] group/item cursor-pointer shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--border-strong)] transition-all duration-300"
+      aria-label={altText ?? title}
+    >
+      {/* Görsel veya Video */}
+      <div className={cn("w-full relative overflow-hidden", aspectRatio)}>
+        {isVideo ? (
+          <div className="w-full h-full relative bg-[var(--bg-overlay)]">
+            <video
+              src={displayUrl}
+              className="w-full h-full object-cover"
+              muted
+              playsInline
+              preload="metadata"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+              <div className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center text-white border border-white/20 shadow-md">
+                <Play className="w-4 h-4 fill-current ml-0.5" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Image
+            src={displayUrl}
+            alt={altText ?? title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover/item:scale-[1.03]"
+            loading="lazy"
+            placeholder="empty"
+            unoptimized={process.env.NODE_ENV === "development"}
+          />
+        )}
+      </div>
+
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 flex flex-col justify-end opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 z-10">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Badge className="bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] text-[9px] font-bold border border-[var(--accent-primary)]/30 hover:bg-[var(--accent-primary)]/20 px-1.5 py-0.5 rounded capitalize">
+            {categoryLabel}
+          </Badge>
+          <span className="text-[10px] text-white/50 font-mono">{dateLabel}</span>
+        </div>
+        <h3 className="text-sm font-bold text-white line-clamp-1">{title}</h3>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ana Bileşen
+// ---------------------------------------------------------------------------
+
+export function GalleryPageClient() {
+  const [activeCategory, setActiveCategory] = useState<string>("hepsi");
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const { data: items = [], isLoading, error } = useGalleryItems(activeCategory);
+
+  const openLightbox = (index: number) => {
+    setSelectedIndex(index);
   };
 
-  const closeLightbox = () => {
-    setSelectedItemIndex(null);
-  };
+  const closeLightbox = () => setSelectedIndex(null);
 
   const handleNext = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (selectedItemIndex !== null) {
-      setSelectedItemIndex((prev) => (prev! + 1) % filteredItems.length);
-      setZoomScale(1);
+    if (selectedIndex !== null) {
+      setSelectedIndex((prev) => ((prev ?? 0) + 1) % items.length);
     }
   };
 
   const handlePrev = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (selectedItemIndex !== null) {
-      setSelectedItemIndex((prev) => (prev! - 1 + filteredItems.length) % filteredItems.length);
-      setZoomScale(1);
+    if (selectedIndex !== null) {
+      setSelectedIndex((prev) => ((prev ?? 0) - 1 + items.length) % items.length);
     }
   };
 
-  // Keyboard navigation for Lightbox
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (selectedItemIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (selectedIndex === null) return;
       if (e.key === "ArrowRight") handleNext();
       if (e.key === "ArrowLeft") handlePrev();
       if (e.key === "Escape") closeLightbox();
     };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedItemIndex, filteredItems]);
+  }, [selectedIndex, items]);
 
-  const activeItem = selectedItemIndex !== null ? filteredItems[selectedItemIndex] : null;
+  const activeItem = selectedIndex !== null ? items[selectedIndex] : null;
 
   return (
     <div className="relative min-h-screen pt-24 pb-12 overflow-hidden bg-[var(--bg-base)]">
-      {/* Background glow highlights */}
+      {/* Arka plan efektleri */}
       <div className="absolute top-[-10%] left-[-15%] w-[800px] h-[500px] rounded-full bg-[radial-gradient(ellipse_at_top,rgba(0,242,154,0.04),transparent_60%)] pointer-events-none z-0" />
       <div className="absolute bottom-[20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.03),transparent_70%)] pointer-events-none z-0" />
 
       <Container className="relative z-10 flex flex-col gap-12">
-        
-        {/* Header Block */}
+        {/* Başlık */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="flex flex-col gap-3 max-w-xl">
-            <Badge variant="outline" className="border-teal-400/25 text-teal-400 font-bold bg-teal-500/5 uppercase self-start">
-              VISUAL JOURNAL
+            <Badge
+              variant="outline"
+              className="border-teal-400/25 text-teal-400 font-bold bg-teal-500/5 uppercase self-start"
+            >
+              GÖRSEL GÜNLÜK
             </Badge>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-              Gallery & Moments
+            <h1
+              className="text-3xl sm:text-4xl font-extrabold tracking-tight"
+              style={{ fontFamily: "var(--font-outfit)", color: "#ededed" }}
+            >
+              Galeri & Anlar
             </h1>
-            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Explore photo captures from stream setups, IRL meetups, milestones, and amazing artwork submitted by fans.
+            <p className="text-sm leading-relaxed" style={{ color: "#a1a1aa" }}>
+              Yayın kesitleri, IRL buluşmaları, özel anlar ve hayran sanatlarından seçkiler.
             </p>
           </div>
 
-          {/* Categories select tabs */}
-          <div className="flex flex-wrap gap-2 bg-[var(--bg-overlay)] p-1 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-sm)] self-start md:self-auto">
-            {GALLERY_CATEGORIES.map((cat) => {
-              const IconComp = cat.icon;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer",
-                    activeCategory === cat.id
-                      ? "bg-[var(--bg-base)] text-[var(--text-primary)] shadow-[var(--shadow-sm)] border border-[var(--border-subtle)]"
-                      : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  )}
-                >
-                  <IconComp className="w-3.5 h-3.5" />
-                  {cat.label}
-                </button>
-              );
-            })}
+          {/* Kategori sekmeleri */}
+          <div className="flex flex-wrap gap-1.5 bg-[var(--bg-overlay)] p-1 rounded-2xl border border-[var(--border-default)] shadow-[var(--shadow-sm)] self-start md:self-auto">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+                  activeCategory === cat.id
+                    ? "bg-[var(--bg-base)] shadow-[var(--shadow-sm)] border border-[var(--border-subtle)]"
+                    : "hover:bg-[var(--bg-base)]/50"
+                )}
+                style={{
+                  color:
+                    activeCategory === cat.id ? "#ededed" : "#a1a1aa",
+                }}
+              >
+                {cat.label}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Masonry CSS Column layout */}
-        <motion.div
-          layout
-          className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6"
-        >
-          <AnimatePresence mode="popLayout">
-            {filteredItems.map((item) => (
-              <motion.div
-                key={item.id}
-                layoutId={`img-card-${item.id}`}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="break-inside-avoid relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-default)] bg-[rgba(10,10,10,0.5)] group/item cursor-pointer shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] hover:border-[var(--border-strong)] transition-all duration-300"
-                onClick={() => openLightbox(item.id)}
-              >
-                {/* Column block image gradient placeholder */}
-                <div
-                  className={cn(
-                    "w-full transition-transform duration-700 ease-out group-hover/item:scale-[1.03]",
-                    item.aspect === "landscape" ? "aspect-video" : item.aspect === "portrait" ? "aspect-[3/4]" : "aspect-square"
-                  )}
-                  style={{ background: item.gradient }}
-                />
+        {/* Yükleniyor */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <RefreshCw className="w-8 h-8 animate-spin" style={{ color: "var(--accent-primary)" }} />
+            <span className="text-sm" style={{ color: "#a1a1aa" }}>
+              Görseller yükleniyor...
+            </span>
+          </div>
+        )}
 
-                {/* Glassmorphic hover overlay detailing text */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-5 flex flex-col justify-end opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 z-10">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Badge className="bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] text-[9px] font-bold border border-[var(--accent-primary)]/30 hover:bg-[var(--accent-primary)]/20 px-1.5 py-0.5 rounded capitalize">
-                      {item.category}
-                    </Badge>
-                    <span className="text-[10px] text-white/50 font-mono">{item.date}</span>
-                  </div>
-                  <h3 className="text-sm font-bold text-white line-clamp-1">
-                    {item.label}
-                  </h3>
-                  <p className="text-[11px] text-white/70 line-clamp-2 mt-1 leading-relaxed">
-                    {item.details}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-
-        {filteredItems.length === 0 && (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-[var(--radius-lg)] border border-dashed border-[var(--border-default)]">
-            <ImageIcon className="w-10 h-10 text-[var(--text-tertiary)] mb-3" />
-            <p className="text-sm text-[var(--text-secondary)] font-medium">
-              No items in this category yet.
+        {/* Hata */}
+        {error && !isLoading && (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 rounded-[var(--radius-lg)] border border-dashed border-[var(--border-default)]">
+            <ImageIcon className="w-10 h-10" style={{ color: "#71717a" }} />
+            <p className="text-sm font-medium" style={{ color: "#a1a1aa" }}>
+              Görseller yüklenirken bir hata oluştu.
             </p>
           </div>
         )}
+
+        {/* Boş durum */}
+        {!isLoading && !error && items.length === 0 && (
+          <div className="flex flex-col items-center justify-center p-12 text-center rounded-[var(--radius-lg)] border border-dashed border-[var(--border-default)]">
+            <ImageIcon className="w-10 h-10 mb-3" style={{ color: "#71717a" }} />
+            <p className="text-sm font-medium" style={{ color: "#a1a1aa" }}>
+              Bu kategoride henüz görsel bulunmuyor.
+            </p>
+            <p className="text-xs mt-1" style={{ color: "#71717a" }}>
+              Admin panelinden görseller yükleyebilirsiniz.
+            </p>
+          </div>
+        )}
+
+        {/* Masonry galeri */}
+        {!isLoading && !error && items.length > 0 && (
+          <motion.div layout className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+            <AnimatePresence mode="popLayout">
+              {items.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  layoutId={`gallery-card-${item.id}`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <GalleryCard
+                    imageUrl={item.imageUrl}
+                    thumbnailUrl={item.thumbnailUrl}
+                    title={item.title}
+                    altText={item.altText}
+                    category={item.category}
+                    createdAt={item.createdAt}
+                    width={item.width}
+                    height={item.height}
+                    onClick={() => openLightbox(index)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
       </Container>
 
-      {/* Lightbox Fullscreen Modal */}
+      {/* Lightbox */}
       <AnimatePresence>
         {activeItem && (
           <motion.div
@@ -289,17 +317,22 @@ export function GalleryPageClient() {
             className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col justify-between"
             onClick={closeLightbox}
           >
-            {/* Header controls bar */}
+            {/* Üst çubuk */}
             <div className="flex items-center justify-between p-6 bg-gradient-to-b from-black/80 to-transparent relative z-20">
               <div className="flex flex-col gap-0.5 text-left">
                 <div className="flex items-center gap-2">
                   <Badge className="bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary)] text-[10px] font-bold border-none px-2 py-0.5 capitalize">
-                    {activeItem.category}
+                    {GALLERY_CATEGORY_LABELS[activeItem.category as GalleryCategory] ?? activeItem.category}
                   </Badge>
-                  <span className="text-xs text-white/60 font-mono">{activeItem.date}</span>
+                  <span className="text-xs text-white/60 font-mono">
+                    {new Date(activeItem.createdAt).toLocaleDateString("tr-TR", {
+                      year: "numeric",
+                      month: "long",
+                    })}
+                  </span>
                 </div>
                 <h2 className="text-base sm:text-lg font-bold text-white mt-1">
-                  {activeItem.label}
+                  {activeItem.title}
                 </h2>
               </div>
 
@@ -307,71 +340,79 @@ export function GalleryPageClient() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setZoomScale((z) => (z === 1 ? 1.4 : 1));
+                    window.open(activeItem.imageUrl, "_blank");
                   }}
                   className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer border border-white/5"
-                  title="Toggle Zoom"
+                  title="Tam Boyut Görüntüle"
                 >
-                  <Maximize2 className="w-4.5 h-4.5" />
-                </button>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer border border-white/5"
-                  title="Download File"
-                >
-                  <Download className="w-4.5 h-4.5" />
+                  <Maximize2 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={closeLightbox}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer border border-white/10"
+                  aria-label="Kapat"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Central presentation area */}
+            {/* Ana görsel */}
             <div className="flex-1 flex items-center justify-between px-4 md:px-8 relative">
-              {/* Prev button */}
               <button
                 onClick={handlePrev}
                 className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 hover:scale-105 flex items-center justify-center text-white transition-all cursor-pointer relative z-20 border border-white/5 select-none"
+                aria-label="Önceki"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
 
-              {/* Main image container */}
               <div className="max-w-4xl w-full flex items-center justify-center px-4 relative z-10">
                 <motion.div
-                  layoutId={`img-card-${activeItem.id}`}
-                  className="w-full max-h-[60dvh] aspect-video rounded-xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-300"
-                  style={{
-                    background: activeItem.gradient,
-                    scale: zoomScale,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setZoomScale((z) => (z === 1 ? 1.4 : 1));
-                  }}
-                />
+                  layoutId={`gallery-card-${activeItem.id}`}
+                  className="relative w-full max-h-[60dvh] rounded-xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden bg-black"
+                  style={{ aspectRatio: activeItem.width && activeItem.height ? `${activeItem.width}/${activeItem.height}` : "16/9" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {isVideoUrl(activeItem.imageUrl) ? (
+                    <video
+                      src={activeItem.imageUrl}
+                      controls
+                      autoPlay
+                      className="w-full h-full object-contain max-h-[60vh] rounded-xl"
+                    />
+                  ) : (
+                    <Image
+                      src={activeItem.imageUrl}
+                      alt={activeItem.altText ?? activeItem.title}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 80vw"
+                      className="object-contain"
+                      priority
+                      unoptimized={process.env.NODE_ENV === "development"}
+                    />
+                  )}
+                </motion.div>
               </div>
 
-              {/* Next button */}
               <button
                 onClick={handleNext}
                 className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 hover:scale-105 flex items-center justify-center text-white transition-all cursor-pointer relative z-20 border border-white/5 select-none"
+                aria-label="Sonraki"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Footer description bar */}
+            {/* Alt bilgi */}
             <div className="p-6 bg-gradient-to-t from-black/80 to-transparent relative z-20 text-center max-w-2xl mx-auto flex flex-col gap-2">
-              <p className="text-xs sm:text-sm text-white/80 leading-relaxed pl-1.5">
-                {activeItem.details}
-              </p>
+              {activeItem.description && (
+                <p className="text-xs sm:text-sm text-white/80 leading-relaxed">
+                  {activeItem.description}
+                </p>
+              )}
               <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">
-                Image {selectedItemIndex! + 1} of {filteredItems.length}
+                {(selectedIndex ?? 0) + 1} / {items.length}
               </span>
             </div>
           </motion.div>

@@ -1,17 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { SectionTitle } from "@/components/analytics/section-title";
 import { RevealOnScroll } from "@/components/motion";
-import { useGalleryItems } from "@/features/gallery/hooks/use-gallery";
-
-const heightMap = {
-  landscape: "h-44",
-  portrait: "h-72",
-  square: "h-56",
-} as const;
+import { useFeaturedGalleryItems } from "@/features/gallery/hooks/use-gallery";
+import { Play } from "lucide-react";
 
 function GallerySkeleton() {
   return (
@@ -22,21 +18,23 @@ function GallerySkeleton() {
 }
 
 export function GalleryPreviewSection() {
-  const { data: items, isLoading } = useGalleryItems("all");
+  const { data: items, isLoading } = useFeaturedGalleryItems();
+
+  const hasItems = !isLoading && items && items.length > 0;
 
   return (
     <Section padding="lg" divided>
       <Container>
         <RevealOnScroll animation="slide-up">
           <SectionTitle
-            eyebrow="Gallery"
-            title="Moments That Matter"
-            description="Milestones, meetups, and memories captured across the journey."
+            eyebrow="Galeri"
+            title="Öne Çıkan Anlar"
+            description="Yayın kesitleri, buluşmalar ve özel anlardan seçkiler."
             align="left"
           />
         </RevealOnScroll>
 
-        {/* Masonry using CSS columns */}
+        {/* Masonry CSS columns */}
         <div className="mt-12">
           <div
             className="gallery-masonry"
@@ -47,56 +45,96 @@ export function GalleryPreviewSection() {
               @media (min-width: 1024px) { .gallery-masonry { column-count: 4 !important; } }
             `}</style>
 
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <GallerySkeleton key={i} />
-                ))
-              : (items ?? []).map((item, i) => (
+            {isLoading &&
+              Array.from({ length: 6 }).map((_, i) => <GallerySkeleton key={i} />)}
+
+            {hasItems &&
+              items!.map((item, i) => {
+                const displayUrl = item.thumbnailUrl && item.thumbnailUrl.trim() !== "" ? item.thumbnailUrl : item.imageUrl;
+                const lowercase = displayUrl.toLowerCase();
+                const isVideo = lowercase.endsWith(".mp4") || lowercase.endsWith(".webm") || lowercase.endsWith(".mov") || 
+                  (lowercase.includes("/storage/v1/object/public/gallery/") &&
+                    !lowercase.endsWith(".webp") && !lowercase.endsWith(".png") && !lowercase.endsWith(".jpg") && 
+                    !lowercase.endsWith(".jpeg") && !lowercase.endsWith(".gif"));
+
+                return (
                   <motion.div
                     key={item.id}
                     className="break-inside-avoid mb-4 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] group cursor-pointer"
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.1 }}
-                    transition={{ duration: 0.5, delay: (i % 4) * 0.07, ease: [0.16, 1, 0.3, 1] }}
+                    transition={{
+                      duration: 0.5,
+                      delay: (i % 4) * 0.07,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                     whileHover={{ scale: 1.01 }}
                   >
-                    {/* Image placeholder */}
-                    <div
-                      className={`relative w-full overflow-hidden ${heightMap[item.aspect]}`}
-                      style={{ background: item.gradient }}
-                    >
+                    <div className="relative w-full h-44 overflow-hidden bg-[var(--bg-overlay)]">
+                      {isVideo ? (
+                        <div className="w-full h-full relative bg-[var(--bg-overlay)]">
+                          <video
+                            src={displayUrl}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                            <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white border border-white/20 shadow-md">
+                              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <Image
+                          src={displayUrl}
+                          alt={item.altText ?? item.title}
+                          fill
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                          loading="lazy"
+                          unoptimized={process.env.NODE_ENV === "development"}
+                        />
+                      )}
+
                       {/* Hover overlay */}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-end p-3">
-                        <p className="text-xs text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-snug">
-                          {item.label}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-end p-3 z-10">
+                        <p className="text-xs text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-snug line-clamp-2">
+                          {item.title}
                         </p>
                       </div>
-
-                      {/* Subtle gradient shimmer */}
-                      <div
-                        aria-hidden
-                        className="absolute inset-0 opacity-30"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)",
-                        }}
-                      />
                     </div>
                   </motion.div>
-                ))}
+                );
+              })}
+
+            {/* Boş durum (opsiyonel — ana sayfada sessizce göster) */}
+            {!isLoading && (!items || items.length === 0) && (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="break-inside-avoid mb-4 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] h-44 bg-[var(--bg-overlay)] animate-pulse"
+                />
+              ))
+            )}
           </div>
         </div>
 
-        {/* View all link */}
+        {/* Galeri bağlantısı */}
         <RevealOnScroll animation="fade" delay={0.2}>
           <div className="mt-8 flex justify-center">
             <a
               href="/gallery"
-              className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] group"
+              className="inline-flex items-center gap-2 text-sm transition-colors hover:text-[var(--text-primary)] group"
+              style={{ color: "#a1a1aa" }}
             >
-              View Full Gallery
-              <span className="inline-block transition-transform group-hover:translate-x-1" aria-hidden>
+              Tüm Galeriyi Gör
+              <span
+                className="inline-block transition-transform group-hover:translate-x-1"
+                aria-hidden
+              >
                 →
               </span>
             </a>

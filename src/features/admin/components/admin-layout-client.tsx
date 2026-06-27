@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   LogOut,
+  Images,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCurrentProfile, usePermissions, useAuth } from "@/features/auth/hooks/use-auth";
@@ -29,6 +30,7 @@ const SIDEBAR_ITEMS: AdminSidebarItem[] = [
   { label: "Canlı Yayın", href: "/admin/live", icon: Sliders },
   { label: "Yayın Geçmişi", href: "/admin/schedule", icon: Calendar },
   { label: "Topluluk Oyun Önerileri", href: "/admin/suggestions", icon: ThumbsUp },
+  { label: "Medya Kütüphanesi", href: "/admin/media", icon: Images },
   { label: "Ayarlar", href: "/admin/settings", icon: Settings },
 ];
 

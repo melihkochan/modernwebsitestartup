@@ -23,7 +23,9 @@ export const queryKeys = {
   gallery: {
     all: ["gallery"] as const,
     items: (category: string) => [...queryKeys.gallery.all, "items", category] as const,
+    featured: () => [...queryKeys.gallery.all, "featured"] as const,
   },
+
   timeline: {
     all: ["timeline"] as const,
     milestones: (year: string) => [...queryKeys.timeline.all, "milestones", year] as const,

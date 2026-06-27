@@ -369,72 +369,62 @@ export type Database = {
       }
       gallery: {
         Row: {
-          cover_image_url: string | null
-          created_at: string
-          deleted_at: string | null
-          description: string | null
           id: string
-          slug: string
           title: string
+          description: string | null
+          image_url: string
+          thumbnail_url: string | null
+          category: string
+          alt_text: string | null
+          steam_app_id: number | null
+          width: number | null
+          height: number | null
+          file_size: number | null
+          is_featured: boolean
+          order_index: number
+          usage_context: string
+          created_at: string
           updated_at: string
         }
         Insert: {
-          cover_image_url?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          description?: string | null
           id?: string
-          slug: string
           title: string
+          description?: string | null
+          image_url: string
+          thumbnail_url?: string | null
+          category?: string
+          alt_text?: string | null
+          steam_app_id?: number | null
+          width?: number | null
+          height?: number | null
+          file_size?: number | null
+          is_featured?: boolean
+          order_index?: number
+          usage_context?: string
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          cover_image_url?: string | null
-          created_at?: string
-          deleted_at?: string | null
-          description?: string | null
           id?: string
-          slug?: string
           title?: string
+          description?: string | null
+          image_url?: string
+          thumbnail_url?: string | null
+          category?: string
+          alt_text?: string | null
+          steam_app_id?: number | null
+          width?: number | null
+          height?: number | null
+          file_size?: number | null
+          is_featured?: boolean
+          order_index?: number
+          usage_context?: string
+          created_at?: string
           updated_at?: string
         }
         Relationships: []
       }
-      gallery_images: {
-        Row: {
-          caption: string | null
-          created_at: string
-          gallery_id: string
-          id: string
-          image_url: string
-          updated_at: string
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string
-          gallery_id: string
-          id?: string
-          image_url: string
-          updated_at?: string
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string
-          gallery_id?: string
-          id?: string
-          image_url?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gallery_images_gallery_id_fkey"
-            columns: ["gallery_id"]
-            isOneToOne: false
-            referencedRelation: "gallery"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
       game_suggestions: {
         Row: {
           admin_note: string | null
@@ -1049,6 +1039,8 @@ export type Database = {
         ]
       }
     }
+
+
     Views: {
       [_ in never]: never
     }
