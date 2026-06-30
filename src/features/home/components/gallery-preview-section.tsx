@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { SectionTitle } from "@/components/analytics/section-title";
@@ -34,7 +35,6 @@ export function GalleryPreviewSection() {
           />
         </RevealOnScroll>
 
-        {/* Masonry CSS columns */}
         <div className="mt-12">
           <div
             className="gallery-masonry"
@@ -58,55 +58,55 @@ export function GalleryPreviewSection() {
                     !lowercase.endsWith(".jpeg") && !lowercase.endsWith(".gif"));
 
                 return (
-                  <motion.div
-                    key={item.id}
-                    className="break-inside-avoid mb-4 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] group cursor-pointer"
-                    initial={{ opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.1 }}
-                    transition={{
-                      duration: 0.5,
-                      delay: (i % 4) * 0.07,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                    whileHover={{ scale: 1.01 }}
-                  >
-                    <div className="relative w-full h-44 overflow-hidden bg-[var(--bg-overlay)]">
-                      {isVideo ? (
-                        <div className="w-full h-full relative bg-[var(--bg-overlay)]">
-                          <video
-                            src={displayUrl}
-                            className="w-full h-full object-cover"
-                            muted
-                            playsInline
-                            preload="metadata"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                            <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white border border-white/20 shadow-md">
-                              <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                  <Link href="/gallery" key={item.id} className="block break-inside-avoid mb-4">
+                    <motion.div
+                      className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] group cursor-pointer"
+                      initial={{ opacity: 0, y: 24 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.1 }}
+                      transition={{
+                        duration: 0.5,
+                        delay: (i % 4) * 0.07,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                      whileHover={{ scale: 1.01 }}
+                    >
+                      <div className="relative w-full h-44 overflow-hidden bg-[var(--bg-overlay)]">
+                        {isVideo ? (
+                          <div className="w-full h-full relative bg-gradient-to-br from-purple-950/20 via-slate-900 to-teal-950/20">
+                            <video
+                              src={`${displayUrl}#t=0.001`}
+                              className="w-full h-full object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                              <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white border border-white/20 shadow-md">
+                                <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <Image
-                          src={displayUrl}
-                          alt={item.altText ?? item.title}
-                          fill
-                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                          loading="lazy"
-                          unoptimized={process.env.NODE_ENV === "development"}
-                        />
-                      )}
+                        ) : (
+                          <Image
+                            src={displayUrl}
+                            alt={item.altText ?? item.title}
+                            fill
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                            loading="lazy"
+                            unoptimized={process.env.NODE_ENV === "development"}
+                          />
+                        )}
 
-                      {/* Hover overlay */}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-end p-3 z-10">
-                        <p className="text-xs text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-snug line-clamp-2">
-                          {item.title}
-                        </p>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-end p-3 z-10">
+                          <p className="text-xs text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 leading-snug line-clamp-2">
+                            {item.title}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+                  </Link>
                 );
               })}
 

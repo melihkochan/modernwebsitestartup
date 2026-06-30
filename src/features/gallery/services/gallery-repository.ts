@@ -88,7 +88,8 @@ const supabaseGalleryRepository: GalleryRepository = {
         )
         .eq("is_featured", true)
         .order("order_index", { ascending: true })
-        .limit(6);
+        .order("created_at", { ascending: false })
+        .limit(12);
 
       if (error) {
         throw new RepositoryError(error.message, "FETCH_FEATURED_GALLERY_FAILED", error);

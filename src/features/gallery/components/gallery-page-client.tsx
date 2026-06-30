@@ -9,6 +9,7 @@ import {
   ImageIcon,
   RefreshCw,
   Play,
+  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -109,7 +110,7 @@ function GalleryCard({
         {isVideo ? (
           <div className="w-full h-full relative bg-[var(--bg-overlay)]">
             <video
-              src={displayUrl}
+              src={`${displayUrl}#t=0.001`}
               className="w-full h-full object-cover"
               muted
               playsInline
@@ -158,6 +159,24 @@ export function GalleryPageClient() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const { data: items = [], isLoading, error } = useGalleryItems(activeCategory);
+
+  const handleDownload = async (url: string, title: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      const extension = url.split("?")[0].split(".").pop() || "bin";
+      a.download = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(url, "_blank");
+    }
+  };
 
   const openLightbox = (index: number) => {
     setSelectedIndex(index);
@@ -337,15 +356,27 @@ export function GalleryPageClient() {
               </div>
 
               <div className="flex items-center gap-3">
+                {!isVideoUrl(activeItem.imageUrl) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(activeItem.imageUrl, "_blank");
+                    }}
+                    className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer border border-white/5"
+                    title="Tam Boyut Görüntüle"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.open(activeItem.imageUrl, "_blank");
+                    handleDownload(activeItem.imageUrl, activeItem.title);
                   }}
                   className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer border border-white/5"
-                  title="Tam Boyut Görüntüle"
+                  title="İndir"
                 >
-                  <Maximize2 className="w-4 h-4" />
+                  <Download className="w-4 h-4" />
                 </button>
                 <button
                   onClick={closeLightbox}
