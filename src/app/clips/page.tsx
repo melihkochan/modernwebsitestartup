@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
+import { NavbarLiveWrapper } from "@/components/layout/navbar-live-wrapper";
+import { Footer } from "@/components/layout/footer";
+import { ClipsPageClient } from "@/features/clips/components/clips-page-client";
 
 export const metadata: Metadata = {
-  title: "Clips",
+  title: "Klipler — Zehragn",
   description: "Watch the best Zehragn stream clips — featured highlights, funny moments, and top plays.",
 };
 
-/** /clips — Sprint 1 placeholder. Full implementation: Sprint 2. */
 export default function ClipsPage() {
   return (
-    <main style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <p style={{ color: "var(--text-secondary)", fontFamily: "var(--font-inter)" }}>
-        /clips — Placeholder
-      </p>
-    </main>
+    <>
+      <NavbarLiveWrapper />
+      <main id="main-content">
+        <ClipsPageClient />
+      </main>
+      <Footer />
+    </>
   );
 }

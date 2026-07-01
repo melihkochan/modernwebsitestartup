@@ -27,6 +27,8 @@ export interface AdminSuggestion {
   adminNote: string;
   status: "pending" | "considering" | "approved" | "played" | "rejected";
   steamAppId: number | null;
+  platform?: string | null;
+  coverImageUrl?: string | null;
   steamDetails?: {
     name: string;
     headerImage: string;
@@ -56,11 +58,11 @@ export interface CreatorStats {
   streamTitle: string | null;
   startedAt: string | null;
   viewerCount: number;
-  // null = Kick API did not return this data — must show unavailable state, never a fallback number
+  thumbnailUrl: string | null;
+  streamUrl: string | null;
+  lastCheckedAt: string | null;
   totalFollowers: number | null;
-  // null = API did not return subscriber count for this sync cycle
   totalSubscribers: number | null;
-  // null = no stream_history data exists yet
   peakViewers: number | null;
   averageViewers: number | null;
   totalStreams: number;
@@ -131,6 +133,8 @@ const supabaseAdminRepository: AdminRepository = {
             adminNote: d.admin_note || "",
             status: d.status as AdminSuggestion["status"],
             steamAppId: d.steam_appid,
+            platform: d.platform || "PC",
+            coverImageUrl: d.cover_image_url,
             steamDetails,
           };
         })
@@ -286,15 +290,18 @@ const supabaseAdminRepository: AdminRepository = {
         };
       }
 
+      const isLive = streamState?.is_live ?? false;
+
       return {
-        isLive: streamState?.is_live ?? false,
-        currentGame: streamState?.current_game ?? null,
-        streamTitle: streamState?.stream_title ?? null,
-        startedAt: streamState?.started_at ?? null,
+        isLive,
+        currentGame: streamState?.current_game || "Kategori bilgisi alınamadı.",
+        streamTitle: streamState?.stream_title || "Güncel yayın bulunmuyor.",
+        startedAt: streamState?.started_at || null,
         viewerCount: streamState?.viewer_count ?? 0,
-        // follower_count: Kick API does not expose this via client credentials — null is correct
+        thumbnailUrl: streamState?.thumbnail_url || null,
+        streamUrl: streamState?.stream_url || null,
+        lastCheckedAt: streamState?.last_checked_at || null,
         totalFollowers: null,
-        // subscriber count from subscriber_history table (official Kick metric)
         totalSubscribers: subData?.active_count ?? null,
         peakViewers,
         averageViewers,
@@ -303,13 +310,15 @@ const supabaseAdminRepository: AdminRepository = {
         recentStream,
       };
     } catch {
-      // On database errors, return safe null values — never hardcoded statistics
       return {
         isLive: false,
-        currentGame: null,
-        streamTitle: null,
+        currentGame: "Kategori bilgisi alınamadı.",
+        streamTitle: "Güncel yayın bulunmuyor.",
         startedAt: null,
         viewerCount: 0,
+        thumbnailUrl: null,
+        streamUrl: null,
+        lastCheckedAt: null,
         totalFollowers: null,
         totalSubscribers: null,
         peakViewers: null,

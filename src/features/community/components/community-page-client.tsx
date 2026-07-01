@@ -18,6 +18,19 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import Image from "next/image";
+import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
+import { useCurrentUser } from "@/features/auth/hooks/use-auth";
+import { SteamGamePicker, type SteamGame } from "@/components/ui/steam-game-picker";
+import {
+  useSuggestions,
+  useSuggestGame,
+  useUpvoteSuggestion,
+  useActivePoll,
+  useCastVote,
+  useFanMessages,
+  useAddFanMessage,
+} from "../hooks/use-community";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -48,155 +61,79 @@ interface FanMessage {
 }
 
 export function CommunityPageClient() {
-  // 1. Suggestions State
-  const [suggestions, setSuggestions] = useState<GameSuggestion[]>([
-    {
-      id: "s-1",
-      game: "Elden Ring: Shadow of the Erdtree",
-      votes: 2420,
-      submittedBy: "EldenLord",
-      platform: "PC / Console",
-      description: "Play the new DLC blind! High death count guaranteed.",
-      isUpvoted: false,
-    },
-    {
-      id: "s-2",
-      game: "Hollow Knight: Silksong",
-      votes: 1982,
-      submittedBy: "ClownClown",
-      platform: "PC / Console",
-      description: "If it releases during our lifetime, please stream it.",
-      isUpvoted: false,
-    },
-    {
-      id: "s-3",
-      game: "Resident Evil 4 Remake",
-      votes: 1450,
-      submittedBy: "LeonS",
-      platform: "Console",
-      description: "Professional difficulty run with no HUD would be epic.",
-      isUpvoted: false,
-    },
-    {
-      id: "s-4",
-      game: "Minecraft Viewers Realm",
-      votes: 980,
-      submittedBy: "CreeperLover",
-      platform: "PC",
-      description: "Host a server and let the ZehrArmy build a monument.",
-      isUpvoted: false,
-    },
-  ]);
+  const { data: siteAssets } = useSiteAssets();
+  const { data: suggestions = [] } = useSuggestions();
+  const { data: poll } = useActivePoll();
+  const { data: fanMessages = [] } = useFanMessages();
+  const { data: currentUser } = useCurrentUser();
 
-  // 2. Poll State
+  const suggestMutation = useSuggestGame();
+  const upvoteMutation = useUpvoteSuggestion();
+  const voteMutation = useCastVote();
+  const addMessageMutation = useAddFanMessage();
+
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [pollOptions, setPollOptions] = useState<PollOption[]>([
-    { id: "p-1", label: "Valorant Custom Viewer Games", votes: 1842 },
-    { id: "p-2", label: "Horror Night (Outlast 2)", votes: 891 },
-    { id: "p-3", label: "Indie Games Variety Stream", votes: 447 },
-  ]);
 
-  // 3. Fan Messages State
-  const [fanMessages, setFanMessages] = useState<FanMessage[]>([
-    {
-      id: "m-1",
-      username: "PurpleKnight99",
-      message: "Best Valorant player on Kick, no debate. Love the streams!",
-      time: "12m ago",
-    },
-    {
-      id: "m-2",
-      username: "ayz_tv",
-      message: "The community here is honestly so wholesome. Been here since 5K.",
-      time: "28m ago",
-    },
-    {
-      id: "m-3",
-      username: "StreamerFan_TR",
-      message: "That clutch last night was absolutely insane. Clip of the year fr.",
-      time: "1h ago",
-    },
-  ]);
-
-  // Modals / Suggestion Form state
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
-  const [newGameName, setNewGameName] = useState("");
-  const [newGamePlatform, setNewGamePlatform] = useState("");
+  const [selectedSteamGame, setSelectedSteamGame] = useState<SteamGame | null>(null);
   const [newGameDesc, setNewGameDesc] = useState("");
 
-  // Fan message submit state
   const [newMessageText, setNewMessageText] = useState("");
   const [newMessageUser, setNewMessageUser] = useState("");
 
-  // Upvoting handler
   const handleUpvote = (id: string) => {
-    setSuggestions((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const upvoted = !s.isUpvoted;
-          return {
-            ...s,
-            votes: upvoted ? s.votes + 1 : s.votes - 1,
-            isUpvoted: upvoted,
-          };
-        }
-        return s;
-      })
-    );
+    upvoteMutation.mutate(id);
   };
 
-  // Suggest game submit handler
-  const handleSuggestSubmit = (e: React.FormEvent) => {
+  const handleSuggestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newGameName.trim()) return;
+    if (!currentUser || !selectedSteamGame) return;
 
-    const newSug: GameSuggestion = {
-      id: `s-${Date.now()}`,
-      game: newGameName,
-      platform: newGamePlatform || "PC",
-      description: newGameDesc || "No description provided.",
-      votes: 1,
-      submittedBy: "Anonymous Fan",
-      isUpvoted: true,
-    };
+    try {
+      await suggestMutation.mutateAsync({
+        game: selectedSteamGame.name,
+        platform: selectedSteamGame.platform || "PC",
+        description: newGameDesc || "Açıklama belirtilmedi.",
+        submittedBy: currentUser.id,
+        steamAppId: selectedSteamGame.steamAppId,
+        coverImageUrl: selectedSteamGame.headerImage,
+      });
 
-    setSuggestions((prev) => [newSug, ...prev]);
-    setNewGameName("");
-    setNewGamePlatform("");
-    setNewGameDesc("");
-    setIsSuggestModalOpen(false);
+      setSelectedSteamGame(null);
+      setNewGameDesc("");
+      setIsSuggestModalOpen(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  // Poll Vote handler
   const handleVote = (optionId: string) => {
-    if (hasVoted) return;
+    if (hasVoted || !poll?.id) return;
     setSelectedOption(optionId);
-    setPollOptions((prev) =>
-      prev.map((opt) => (opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt))
-    );
     setHasVoted(true);
+    voteMutation.mutate({ pollId: poll.id, optionId });
   };
 
-  // Fan Message Submit handler
-  const handleMessageSubmit = (e: React.FormEvent) => {
+  const handleMessageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessageText.trim()) return;
 
-    const newMsg: FanMessage = {
-      id: `msg-${Date.now()}`,
-      username: newMessageUser.trim() || "AnonymousHero",
-      message: newMessageText,
-      time: "Just now",
-    };
+    try {
+      await addMessageMutation.mutateAsync({
+        username: newMessageUser.trim() || "Anonim",
+        message: newMessageText,
+      });
 
-    setFanMessages((prev) => [newMsg, ...prev]);
-    setNewMessageText("");
-    setNewMessageUser("");
+      setNewMessageText("");
+      setNewMessageUser("");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  // Compute total poll votes
-  const totalPollVotes = pollOptions.reduce((acc, curr) => acc + curr.votes, 0);
+  const pollOptions = poll?.options ?? [];
+  const totalPollVotes = poll?.totalVotes ?? 0;
 
   return (
     <div className="relative min-h-screen pt-24 pb-12 overflow-hidden bg-[var(--bg-base)]">
@@ -210,9 +147,21 @@ export function CommunityPageClient() {
           <Badge variant="outline" className="border-purple-400/25 text-purple-400 font-bold bg-purple-500/5 uppercase self-start">
             ZEHRARMY HUB
           </Badge>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-            Community Center
-          </h1>
+          <div className="flex items-center gap-4">
+            {siteAssets?.avatarUrl && (
+              <Image
+                src={siteAssets.avatarUrl}
+                alt="Avatar"
+                width={48}
+                height={48}
+                className="rounded-full object-cover border border-[var(--border-default)]"
+                unoptimized={process.env.NODE_ENV === "development"}
+              />
+            )}
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
+              Community Center
+            </h1>
+          </div>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
             Suggest next games, participate in live broadcast decisions, and write public messages on the wall.
           </p>
@@ -281,37 +230,52 @@ export function CommunityPageClient() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   >
-                    <GlassCard className="p-5 border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-all duration-300 flex items-start justify-between gap-4 relative group">
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                            {item.game}
-                          </h3>
-                          <Badge className="bg-[var(--bg-overlay)] text-[var(--text-secondary)] border border-[var(--border-default)] text-[9px] font-bold">
-                            {item.platform}
-                          </Badge>
+                    <GlassCard className="p-5 border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-all duration-300 flex gap-4 relative group items-stretch">
+                      {item.coverImageUrl && (
+                        <div className="w-16 h-20 relative bg-zinc-950 rounded-lg overflow-hidden shrink-0 shadow-[var(--shadow-sm)] border border-[var(--border-default)]">
+                          <Image
+                            src={item.coverImageUrl}
+                            alt={item.game}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
                         </div>
-                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                          {item.description}
-                        </p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-tertiary)] font-medium">
+                      )}
+                      <div className="flex-1 flex flex-col justify-between min-w-0">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">
+                              {item.game}
+                            </h3>
+                            <Badge className="bg-[var(--bg-overlay)] text-[var(--text-secondary)] border border-[var(--border-default)] text-[9px] font-bold">
+                              {item.platform}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2">
+                            {item.description}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-tertiary)] font-medium mt-2">
                           <span>Suggested by: <span className="text-[var(--text-secondary)] font-bold">{item.submittedBy}</span></span>
                         </div>
                       </div>
 
                       {/* Vote trigger container */}
-                      <button
-                        onClick={() => handleUpvote(item.id)}
-                        className={cn(
-                          "flex flex-col items-center justify-center min-w-[54px] py-2 px-1 rounded-lg border transition-all cursor-pointer shadow-[var(--shadow-sm)]",
-                          item.isUpvoted
-                            ? "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/30 text-[var(--accent-primary)] scale-[1.03]"
-                            : "bg-[var(--bg-overlay)] border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
-                        )}
-                      >
-                        <ThumbsUp className={cn("w-3.5 h-3.5 mb-1 transition-transform", item.isUpvoted && "scale-110 fill-current")} />
-                        <span className="text-xs font-mono font-bold">{item.votes}</span>
-                      </button>
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => handleUpvote(item.id)}
+                          className={cn(
+                            "flex flex-col items-center justify-center min-w-[54px] py-2 px-1 rounded-lg border transition-all cursor-pointer shadow-[var(--shadow-sm)]",
+                            item.isUpvoted
+                              ? "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/30 text-[var(--accent-primary)] scale-[1.03]"
+                              : "bg-[var(--bg-overlay)] border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
+                          )}
+                        >
+                          <ThumbsUp className={cn("w-3.5 h-3.5 mb-1 transition-transform", item.isUpvoted && "scale-110 fill-current")} />
+                          <span className="text-xs font-mono font-bold">{item.votes}</span>
+                        </button>
+                      </div>
                     </GlassCard>
                   </motion.div>
                 ))}
@@ -327,66 +291,72 @@ export function CommunityPageClient() {
               <div className="flex items-center gap-2">
                 <Vote className="w-5 h-5 text-purple-400" />
                 <h2 className="text-lg font-bold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-                  Active Decisions Poll
+                  Aktif Yayın Kararları
                 </h2>
               </div>
 
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                    What game should we play for variety slot this week?
-                  </h3>
-                  <span className="text-[10px] text-[var(--text-tertiary)] font-medium uppercase tracking-wider">
-                    Total: {totalPollVotes} votes • Ends in 2 days
-                  </span>
+              {!poll ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-500 text-xs border border-dashed border-[var(--border-default)] rounded-xl bg-[rgba(10,10,10,0.1)] gap-2">
+                  <Vote className="w-8 h-8 text-zinc-600 animate-pulse" />
+                  <span className="font-semibold text-[var(--text-secondary)]">Şu an aktif bir oylama bulunmuyor.</span>
                 </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                      {poll.question}
+                    </h3>
+                    <span className="text-[10px] text-[var(--text-tertiary)] font-medium uppercase tracking-wider">
+                      Toplam: {totalPollVotes} oy • Bitiş: {poll.endsIn}
+                    </span>
+                  </div>
 
-                <div className="flex flex-col gap-3">
-                  {pollOptions.map((opt) => {
-                    const percentage = totalPollVotes > 0 ? Math.round((opt.votes / totalPollVotes) * 100) : 0;
-                    return (
-                      <button
-                        key={opt.id}
-                        disabled={hasVoted}
-                        onClick={() => handleVote(opt.id)}
-                        className={cn(
-                          "relative w-full text-left p-3.5 rounded-lg border transition-all overflow-hidden flex justify-between items-center",
-                          hasVoted
-                            ? selectedOption === opt.id
-                              ? "border-[var(--accent-primary)]/40 text-[var(--text-primary)]"
-                              : "border-[var(--border-default)] opacity-60"
-                            : "border-[var(--border-default)] hover:border-[var(--border-strong)] cursor-pointer"
-                        )}
-                      >
-                        {/* Vote Percent background bar */}
-                        {hasVoted && (
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${percentage}%` }}
-                            transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                            className="absolute inset-y-0 left-0 bg-[var(--accent-primary)]/5 pointer-events-none"
-                          />
-                        )}
+                  <div className="flex flex-col gap-3">
+                    {pollOptions.map((opt) => {
+                      const percentage = totalPollVotes > 0 ? Math.round((opt.votes / totalPollVotes) * 100) : 0;
+                      return (
+                        <button
+                          key={opt.id}
+                          disabled={hasVoted}
+                          onClick={() => handleVote(opt.id)}
+                          className={cn(
+                            "relative w-full text-left p-3.5 rounded-lg border transition-all overflow-hidden flex justify-between items-center",
+                            hasVoted
+                              ? selectedOption === opt.id
+                                ? "border-[var(--accent-primary)]/40 text-[var(--text-primary)] font-semibold"
+                                : "border-[var(--border-default)] opacity-60"
+                              : "border-[var(--border-default)] hover:border-[var(--border-strong)] cursor-pointer"
+                          )}
+                        >
+                          {hasVoted && (
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percentage}%` }}
+                              transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                              className="absolute inset-y-0 left-0 bg-[var(--accent-primary)]/5 pointer-events-none"
+                            />
+                          )}
 
-                        <span className="text-xs font-semibold relative z-10 flex items-center gap-2 text-[var(--text-primary)]">
-                          {hasVoted && selectedOption === opt.id && <Check className="w-4.5 h-4.5 text-[var(--accent-primary)] shrink-0" />}
-                          {opt.label}
-                        </span>
+                          <span className="text-xs font-semibold relative z-10 flex items-center gap-2 text-[var(--text-primary)]">
+                            {hasVoted && selectedOption === opt.id && <Check className="w-4.5 h-4.5 text-[var(--accent-primary)] shrink-0" />}
+                            {opt.label}
+                          </span>
 
-                        <span className="text-xs font-mono font-bold text-[var(--text-secondary)] relative z-10 shrink-0">
-                          {hasVoted ? `${percentage}%` : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <span className="text-xs font-mono font-bold text-[var(--text-secondary)] relative z-10 shrink-0">
+                            {hasVoted ? `${percentage}%` : ""}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {hasVoted && (
+                    <span className="text-[10px] text-[var(--text-secondary)] font-semibold text-center italic mt-1 bg-[var(--bg-overlay)] p-2 rounded border border-[var(--border-subtle)]">
+                      Oy verdiğiniz için teşekkürler! Kararlar yayında açıklanacaktır.
+                    </span>
+                  )}
                 </div>
-
-                {hasVoted && (
-                  <span className="text-[10px] text-[var(--text-secondary)] font-semibold text-center italic mt-1 bg-[var(--bg-overlay)] p-2 rounded border border-[var(--border-subtle)]">
-                    Thank you for voting! Decisions will be shown on stream.
-                  </span>
-                )}
-              </div>
+              )}
             </GlassCard>
 
             {/* Fan Message Wall (Guestbook) */}
@@ -456,54 +426,82 @@ export function CommunityPageClient() {
         </div>
       </Container>
 
-      {/* Recommend Game Dialog (Modal) */}
       <Dialog
         open={isSuggestModalOpen}
         onClose={() => setIsSuggestModalOpen(false)}
-        title="Recommend a Game"
+        title="Oyun Önerisinde Bulun"
         size="md"
       >
-        <form onSubmit={handleSuggestSubmit} className="flex flex-col gap-4 pt-4">
-          <Input
-            label="Game Name"
-            placeholder="e.g. Elden Ring"
-            value={newGameName}
-            onChange={(e) => setNewGameName(e.target.value)}
-            required
-            className="text-xs"
-          />
-          <Input
-            label="Platforms"
-            placeholder="e.g. PC, PS5, Switch"
-            value={newGamePlatform}
-            onChange={(e) => setNewGamePlatform(e.target.value)}
-            className="text-xs"
-          />
-          <Textarea
-            label="Why should Zehragn play it?"
-            placeholder="Tell us about the game details, difficulty level, or features..."
-            value={newGameDesc}
-            onChange={(e) => setNewGameDesc(e.target.value)}
-            className="min-h-[80px] text-xs resize-none"
-          />
-          
-          <div className="flex justify-end gap-2 mt-2">
+        {!currentUser ? (
+          <div className="flex flex-col items-center justify-center p-6 text-center gap-4">
+            <p className="text-xs text-[var(--text-secondary)] font-semibold">
+              Oyun önerisinde bulunmak için önce sisteme giriş yapmalısınız.
+            </p>
             <Button
               type="button"
-              variant="outline"
               onClick={() => setIsSuggestModalOpen(false)}
-              className="h-9 px-4 text-xs font-semibold cursor-pointer"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
               className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none cursor-pointer"
             >
-              Submit Recommendation
+              Tamam
             </Button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSuggestSubmit} className="flex flex-col gap-4 pt-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Oyun Seçin</label>
+              <SteamGamePicker
+                value={selectedSteamGame}
+                onSelect={setSelectedSteamGame}
+                placeholder="Steam'de oyun arayın..."
+              />
+            </div>
+            
+            {selectedSteamGame && (
+              <div className="p-3 rounded-lg bg-[var(--bg-overlay)] border border-[var(--border-default)] flex items-center gap-3 animate-fade-in">
+                <div className="w-16 h-8 relative bg-black/40 rounded overflow-hidden flex-shrink-0">
+                  <Image
+                    src={selectedSteamGame.headerImage}
+                    alt={selectedSteamGame.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[var(--text-primary)]">{selectedSteamGame.name}</h4>
+                  <p className="text-[9px] text-[var(--text-tertiary)] uppercase font-bold tracking-wider">{selectedSteamGame.platform}</p>
+                </div>
+              </div>
+            )}
+
+            <Textarea
+              label="Neden Zehragn bu oyunu oynamalı?"
+              placeholder="Zorluk seviyesi, eğlenceli yönleri veya oyun hakkında detaylar..."
+              value={newGameDesc}
+              onChange={(e) => setNewGameDesc(e.target.value)}
+              required
+              className="min-h-[80px] text-xs resize-none"
+            />
+            
+            <div className="flex justify-end gap-2 mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsSuggestModalOpen(false)}
+                className="h-9 px-4 text-xs font-semibold cursor-pointer"
+              >
+                İptal
+              </Button>
+              <Button
+                type="submit"
+                disabled={!selectedSteamGame}
+                className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Öneriyi Gönder
+              </Button>
+            </div>
+          </form>
+        )}
       </Dialog>
     </div>
   );

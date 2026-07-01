@@ -268,42 +268,63 @@ export type Database = {
       clips: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           duration: number
           id: string
           is_featured: boolean | null
-          kick_clip_id: string
+          kick_clip_id: string | null
           thumbnail_url: string
           title: string
           updated_at: string
           video_url: string
           view_count: number | null
+          description: string | null
+          category: string | null
+          game: string | null
+          visibility: string | null
+          display_order: number
+          likes: number
+          views: number
         }
         Insert: {
-          created_at: string
-          created_by: string
+          created_at?: string
+          created_by?: string | null
           duration: number
           id?: string
           is_featured?: boolean | null
-          kick_clip_id: string
+          kick_clip_id?: string | null
           thumbnail_url: string
           title: string
           updated_at?: string
           video_url: string
           view_count?: number | null
+          description?: string | null
+          category?: string | null
+          game?: string | null
+          visibility?: string | null
+          display_order?: number
+          likes?: number
+          views?: number
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           duration?: number
           id?: string
           is_featured?: boolean | null
-          kick_clip_id?: string
+          kick_clip_id?: string | null
           thumbnail_url?: string
           title?: string
           updated_at?: string
           video_url?: string
           view_count?: number | null
+          description?: string | null
+          category?: string | null
+          game?: string | null
+          visibility?: string | null
+          display_order?: number
+          likes?: number
+          views?: number
         }
         Relationships: []
       }
@@ -437,6 +458,7 @@ export type Database = {
           suggested_by: string | null
           updated_at: string
           votes_count: number
+          platform: string | null
         }
         Insert: {
           admin_note?: string | null
@@ -449,6 +471,7 @@ export type Database = {
           suggested_by?: string | null
           updated_at?: string
           votes_count?: number
+          platform?: string | null
         }
         Update: {
           admin_note?: string | null
@@ -461,6 +484,7 @@ export type Database = {
           suggested_by?: string | null
           updated_at?: string
           votes_count?: number
+          platform?: string | null
         }
         Relationships: [
           {
@@ -838,6 +862,8 @@ export type Database = {
           stream_title: string | null
           updated_at: string
           viewer_count: number
+          thumbnail_url: string | null
+          stream_url: string | null
         }
         Insert: {
           created_at?: string
@@ -849,6 +875,8 @@ export type Database = {
           stream_title?: string | null
           updated_at?: string
           viewer_count?: number
+          thumbnail_url?: string | null
+          stream_url?: string | null
         }
         Update: {
           created_at?: string
@@ -860,6 +888,8 @@ export type Database = {
           stream_title?: string | null
           updated_at?: string
           viewer_count?: number
+          thumbnail_url?: string | null
+          stream_url?: string | null
         }
         Relationships: []
       }
@@ -1038,6 +1068,84 @@ export type Database = {
           }
         ]
       }
+      site_assets: {
+        Row: {
+          id: string
+          logo_url: string | null
+          favicon_url: string | null
+          avatar_placeholder_url: string | null
+          image_placeholder_url: string | null
+          og_image_url: string | null
+          avatar_url: string | null
+          hero_banner_url: string | null
+          logo_white_url: string | null
+          logo_dark_url: string | null
+          offline_cover_url: string | null
+          default_thumbnail_url: string | null
+          illustration_404_url: string | null
+          white_logo_url: string | null
+          dark_logo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          logo_url?: string | null
+          favicon_url?: string | null
+          avatar_placeholder_url?: string | null
+          image_placeholder_url?: string | null
+          og_image_url?: string | null
+          avatar_url?: string | null
+          hero_banner_url?: string | null
+          logo_white_url?: string | null
+          logo_dark_url?: string | null
+          offline_cover_url?: string | null
+          default_thumbnail_url?: string | null
+          illustration_404_url?: string | null
+          white_logo_url?: string | null
+          dark_logo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          logo_url?: string | null
+          favicon_url?: string | null
+          avatar_placeholder_url?: string | null
+          image_placeholder_url?: string | null
+          og_image_url?: string | null
+          avatar_url?: string | null
+          hero_banner_url?: string | null
+          logo_white_url?: string | null
+          logo_dark_url?: string | null
+          offline_cover_url?: string | null
+          default_thumbnail_url?: string | null
+          illustration_404_url?: string | null
+          white_logo_url?: string | null
+          dark_logo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      fan_messages: {
+        Row: {
+          id: string
+          username: string
+          message: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          username: string
+          message: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          username?: string
+          message?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
 
 
@@ -1045,6 +1153,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cast_poll_vote: {
+        Args: {
+          poll_id: string
+          option_id: string
+          fingerprint: string
+          profile_id?: string | null
+        }
+        Returns: undefined
+      }
       increment_suggestion_votes: {
         Args: { suggestion_id: string }
         Returns: undefined

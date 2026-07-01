@@ -5,6 +5,8 @@ import { ExternalLink, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +27,7 @@ interface NavbarProps {
  * - Active route highlighting via Framer Motion layoutId
  */
 export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
+  const { data: siteAssets } = useSiteAssets();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -35,12 +38,10 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu when the route changes (but not on first render)
   const prevPathname = useRef(pathname);
   useEffect(() => {
     if (prevPathname.current !== pathname) {
       prevPathname.current = pathname;
-      // Defer to avoid calling setState synchronously inside the effect
       const id = setTimeout(() => setMobileOpen(false), 0);
       return () => clearTimeout(id);
     }
@@ -64,12 +65,30 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
         )}
       >
         <div className="mx-auto flex h-full max-w-[var(--max-width)] items-center justify-between px-8 md:px-12">
-          {/* Logo */}
           <Link
             href="/"
-            className="text-xl font-bold text-[var(--text-primary)] tracking-tight transition-opacity hover:opacity-80"
+            className="flex items-center gap-2.5 text-xl font-bold text-[var(--text-primary)] tracking-tight transition-opacity hover:opacity-80"
             style={{ fontFamily: "var(--font-outfit)" }}
           >
+            {siteAssets?.logoUrl ? (
+              <Image
+                src={siteAssets.logoUrl}
+                alt="Logo"
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+                unoptimized={process.env.NODE_ENV === "development"}
+              />
+            ) : siteAssets?.avatarUrl ? (
+              <Image
+                src={siteAssets.avatarUrl}
+                alt="Avatar"
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+                unoptimized={process.env.NODE_ENV === "development"}
+              />
+            ) : null}
             Zehragn
           </Link>
 

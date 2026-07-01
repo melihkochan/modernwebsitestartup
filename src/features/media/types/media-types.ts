@@ -161,6 +161,13 @@ export interface SiteAssets {
   avatarPlaceholderUrl: string | null;
   imagePlaceholderUrl: string | null;
   ogImageUrl: string | null;
+  avatarUrl: string | null;
+  heroBannerUrl: string | null;
+  whiteLogoUrl: string | null;
+  darkLogoUrl: string | null;
+  offlineCoverUrl: string | null;
+  defaultThumbnailUrl: string | null;
+  illustration404Url: string | null;
 }
 
 // ---------------------------------------------------------------------------

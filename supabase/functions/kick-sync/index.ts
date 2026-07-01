@@ -147,12 +147,14 @@ Deno.serve(async (req) => {
     const { error: stateError } = await supabase
       .from("stream_state")
       .upsert({
-        id: true, // single-row constraint
+        id: true,
         is_live: streamState.isLive,
         viewer_count: streamState.viewerCount,
         current_game: streamState.category || null,
         stream_title: streamState.title || null,
         started_at: streamState.isLive ? streamState.startedAt : null,
+        thumbnail_url: streamState.isLive ? streamState.thumbnailUrl : null,
+        stream_url: streamState.isLive ? `https://kick.com/${KICK_CHANNEL_SLUG}` : null,
         last_checked_at: new Date().toISOString(),
       });
     if (stateError) throw new Error(`Failed to update stream_state: ${stateError.message}`);

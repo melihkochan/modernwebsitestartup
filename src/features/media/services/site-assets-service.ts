@@ -7,24 +7,22 @@ const FALLBACK_ASSETS: SiteAssets = {
   avatarPlaceholderUrl: null,
   imagePlaceholderUrl: null,
   ogImageUrl: null,
+  avatarUrl: null,
+  heroBannerUrl: null,
+  whiteLogoUrl: null,
+  darkLogoUrl: null,
+  offlineCoverUrl: null,
+  defaultThumbnailUrl: null,
+  illustration404Url: null,
 };
 
-/**
- * site_assets tablosundan site genelinde kullanılan statik varlıkları çeker.
- * Tablo boşsa veya hata olursa null değerler içeren fallback döner.
- * Kod içine URL gömülmez.
- *
- * Not: site_assets tablosu Sprint 11 migration'ı çalıştıktan sonra
- * Supabase'de oluşturulur. Migration çalıştırılmadan önce boş fallback döner.
- */
 export async function getSiteAssets(): Promise<SiteAssets> {
   const supabase = createClient();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("site_assets")
-      .select("logo_url, favicon_url, avatar_placeholder_url, image_placeholder_url, og_image_url")
+      .select("logo_url, favicon_url, avatar_placeholder_url, image_placeholder_url, og_image_url, avatar_url, hero_banner_url, white_logo_url, dark_logo_url, offline_cover_url, default_thumbnail_url, illustration_404_url")
       .limit(1)
       .maybeSingle();
 
@@ -33,27 +31,28 @@ export async function getSiteAssets(): Promise<SiteAssets> {
     }
 
     return {
-      logoUrl: (data as { logo_url?: string | null }).logo_url ?? null,
-      faviconUrl: (data as { favicon_url?: string | null }).favicon_url ?? null,
-      avatarPlaceholderUrl:
-        (data as { avatar_placeholder_url?: string | null }).avatar_placeholder_url ?? null,
-      imagePlaceholderUrl:
-        (data as { image_placeholder_url?: string | null }).image_placeholder_url ?? null,
-      ogImageUrl: (data as { og_image_url?: string | null }).og_image_url ?? null,
+      logoUrl: data.logo_url ?? null,
+      faviconUrl: data.favicon_url ?? null,
+      avatarPlaceholderUrl: data.avatar_placeholder_url ?? null,
+      imagePlaceholderUrl: data.image_placeholder_url ?? null,
+      ogImageUrl: data.og_image_url ?? null,
+      avatarUrl: data.avatar_url ?? null,
+      heroBannerUrl: data.hero_banner_url ?? null,
+      whiteLogoUrl: data.white_logo_url ?? null,
+      darkLogoUrl: data.dark_logo_url ?? null,
+      offlineCoverUrl: data.offline_cover_url ?? null,
+      defaultThumbnailUrl: data.default_thumbnail_url ?? null,
+      illustration404Url: data.illustration_404_url ?? null,
     };
   } catch {
     return FALLBACK_ASSETS;
   }
 }
 
-/**
- * site_assets tablosunu günceller (sadece admin).
- */
 export async function updateSiteAssets(updates: Partial<SiteAssets>): Promise<void> {
   const supabase = createClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("site_assets")
     .update({
       logo_url: updates.logoUrl,
@@ -61,6 +60,13 @@ export async function updateSiteAssets(updates: Partial<SiteAssets>): Promise<vo
       avatar_placeholder_url: updates.avatarPlaceholderUrl,
       image_placeholder_url: updates.imagePlaceholderUrl,
       og_image_url: updates.ogImageUrl,
+      avatar_url: updates.avatarUrl,
+      hero_banner_url: updates.heroBannerUrl,
+      white_logo_url: updates.whiteLogoUrl,
+      dark_logo_url: updates.darkLogoUrl,
+      offline_cover_url: updates.offlineCoverUrl,
+      default_thumbnail_url: updates.defaultThumbnailUrl,
+      illustration_404_url: updates.illustration404Url,
     })
     .eq("id", "00000000-0000-0000-0000-000000000001");
 

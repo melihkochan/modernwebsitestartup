@@ -43,4 +43,9 @@ export const queryKeys = {
     logs: () => [...queryKeys.admin.all, "logs"] as const,
     vitals: () => [...queryKeys.admin.all, "vitals"] as const,
   },
+  clips: {
+    all: ["clips"] as const,
+    list: () => [...queryKeys.clips.all, "list"] as const,
+    featured: () => [...queryKeys.clips.all, "featured"] as const,
+  },
 } as const;

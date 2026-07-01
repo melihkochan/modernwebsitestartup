@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Clock, ExternalLink, Gamepad2, Users } from "lucide-react";
 import { LiveBadge } from "@/components/analytics";
@@ -10,50 +11,50 @@ import { HoverGlow, RevealOnScroll, SlideUp } from "@/components/motion";
 import { siteConfig } from "@/config/site";
 import { formatNumber } from "@/lib/utils";
 import { useStreamInfo } from "@/features/live/hooks/use-live";
+import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
 
 export function LivePreviewSection() {
   const { data: streamInfo, isLoading } = useStreamInfo();
+  const { data: siteAssets } = useSiteAssets();
 
   const isLive = streamInfo?.isLive ?? false;
   const viewerCount = streamInfo?.viewerCount ?? 0;
-  const streamTitle = streamInfo?.streamTitle ?? "";
-  const currentGame = streamInfo?.currentGame ?? "Offline";
+  const streamTitle = streamInfo?.streamTitle ?? "Güncel yayın bulunmuyor.";
+  const currentGame = streamInfo?.currentGame ?? "Kategori bilgisi alınamadı.";
   const startedAt = streamInfo?.startedAt ?? "";
 
-  // Derive a friendly "duration" label from startedAt if present
-  const durationLabel = startedAt || "—";
-
-  // Skeleton pulse class for loading state
+  const durationLabel = startedAt
+    ? new Date(startedAt).toLocaleString("tr-TR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })
+    : "—";
   const skeletonCls = "animate-pulse rounded bg-[var(--bg-overlay)]";
+
+  const imageUrl = isLive ? (streamInfo?.thumbnailUrl || siteAssets?.defaultThumbnailUrl || null) : (siteAssets?.offlineCoverUrl || null);
 
   return (
     <Section padding="lg" divided>
       <Container>
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16 items-center">
 
-          {/* ── Left: Stream thumbnail ────────────────────────────── */}
           <RevealOnScroll animation="scale" delay={0.1}>
             <HoverGlow color="var(--accent-primary)" size={360} opacity={0.08}>
               <div
                 className="relative w-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)]"
                 style={{ aspectRatio: "16 / 9" }}
               >
-                {/* Thumbnail background */}
-                <div
-                  className="absolute inset-0"
-                  style={{ background: "linear-gradient(135deg, #1a0533 0%, #0d1117 40%, #0f0a2e 100%)" }}
-                />
-
-                {/* Grid overlay */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0 opacity-20"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(rgba(139,92,246,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.1) 1px, transparent 1px)",
-                    backgroundSize: "40px 40px",
-                  }}
-                />
+                {imageUrl ? (
+                  <Image
+                    src={imageUrl}
+                    alt={streamTitle}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    unoptimized={process.env.NODE_ENV === "development"}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 text-white/40">
+                    <span className="text-sm font-semibold tracking-wider uppercase">Çevrimdışı</span>
+                  </div>
+                )}
 
                 {/* Play button */}
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -95,7 +96,7 @@ export function LivePreviewSection() {
                     <div className={`h-4 w-3/4 ${skeletonCls}`} />
                   ) : (
                     <p className="text-sm font-semibold text-white line-clamp-1">
-                      {streamTitle || "No active stream"}
+                      {streamTitle}
                     </p>
                   )}
                   <p className="mt-0.5 text-xs text-white/60">{currentGame}</p>
@@ -124,7 +125,7 @@ export function LivePreviewSection() {
                   <div className={`h-4 w-full max-w-md ${skeletonCls}`} />
                 ) : (
                   <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-md">
-                    {streamTitle || "Check back soon for the next stream."}
+                    {streamTitle}
                   </p>
                 )}
               </div>
@@ -190,7 +191,7 @@ export function LivePreviewSection() {
                 {startedAt && (
                   <span className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] px-6 py-3 text-sm text-[var(--text-tertiary)]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--success)]" aria-hidden />
-                    Started {startedAt}
+                    Başlangıç: {durationLabel}
                   </span>
                 )}
               </div>

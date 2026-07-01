@@ -15,8 +15,11 @@ import {
   X,
   LogOut,
   Images,
+  Film,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
 import { useCurrentProfile, usePermissions, useAuth } from "@/features/auth/hooks/use-auth";
 
 interface AdminSidebarItem {
@@ -28,6 +31,7 @@ interface AdminSidebarItem {
 const SIDEBAR_ITEMS: AdminSidebarItem[] = [
   { label: "Genel Bakış", href: "/admin", icon: LayoutDashboard },
   { label: "Canlı Yayın", href: "/admin/live", icon: Sliders },
+  { label: "Klipler", href: "/admin/clips", icon: Film },
   { label: "Yayın Geçmişi", href: "/admin/schedule", icon: Calendar },
   { label: "Topluluk Oyun Önerileri", href: "/admin/suggestions", icon: ThumbsUp },
   { label: "Medya Kütüphanesi", href: "/admin/media", icon: Images },
@@ -35,6 +39,7 @@ const SIDEBAR_ITEMS: AdminSidebarItem[] = [
 ];
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
+  const { data: siteAssets } = useSiteAssets();
   const pathname = usePathname();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { data: profile } = useCurrentProfile();
@@ -57,9 +62,28 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-between p-6 pb-2">
           <Link
             href="/admin"
-            className="text-lg font-bold text-[var(--text-primary)] tracking-tight hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 text-lg font-bold text-[var(--text-primary)] tracking-tight hover:opacity-80 transition-opacity"
             style={{ fontFamily: "var(--font-outfit)" }}
           >
+            {siteAssets?.logoUrl ? (
+              <Image
+                src={siteAssets.logoUrl}
+                alt="Logo"
+                width={24}
+                height={24}
+                className="rounded-full object-cover"
+                unoptimized={process.env.NODE_ENV === "development"}
+              />
+            ) : siteAssets?.avatarUrl ? (
+              <Image
+                src={siteAssets.avatarUrl}
+                alt="Avatar"
+                width={24}
+                height={24}
+                className="rounded-full object-cover"
+                unoptimized={process.env.NODE_ENV === "development"}
+              />
+            ) : null}
             Zehragn Yönetim
           </Link>
           <button
@@ -136,12 +160,30 @@ export function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[var(--bg-base)] flex flex-col lg:flex-row relative">
       
-      {/* Mobile Top Header bar */}
       <header className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)] bg-[rgba(10,10,10,0.85)] backdrop-blur-md sticky top-0 z-30">
         <span
-          className="text-base font-bold text-[var(--text-primary)] tracking-tight"
+          className="flex items-center gap-2 text-base font-bold text-[var(--text-primary)] tracking-tight"
           style={{ fontFamily: "var(--font-outfit)" }}
         >
+          {siteAssets?.logoUrl ? (
+            <Image
+              src={siteAssets.logoUrl}
+              alt="Logo"
+              width={20}
+              height={20}
+              className="rounded-full object-cover"
+              unoptimized={process.env.NODE_ENV === "development"}
+            />
+          ) : siteAssets?.avatarUrl ? (
+            <Image
+              src={siteAssets.avatarUrl}
+              alt="Avatar"
+              width={20}
+              height={20}
+              className="rounded-full object-cover"
+              unoptimized={process.env.NODE_ENV === "development"}
+            />
+          ) : null}
           Zehragn Admin
         </span>
         <button

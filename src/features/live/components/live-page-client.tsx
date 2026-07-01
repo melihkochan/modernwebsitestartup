@@ -18,7 +18,10 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { siteConfig } from "@/config/site";
+import Image from "next/image";
+import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
 import { useStreamInfo, useSchedule } from "../hooks/use-live";
+import { useSuggestions } from "@/features/community/hooks/use-community";
 
 const translateDay = (day: string) => {
   const mapping: Record<string, string> = {
@@ -46,6 +49,8 @@ const translateGame = (game: string) => {
 export function LivePageClient() {
   const { data: streamInfo, isLoading: isStreamLoading } = useStreamInfo();
   const { data: scheduleData } = useSchedule();
+  const { data: siteAssets } = useSiteAssets();
+  const { data: suggestions = [], isLoading: suggestionsLoading } = useSuggestions();
 
   const isLive = streamInfo?.isLive ?? false;
   const viewerCount = streamInfo?.viewerCount ?? 0;
@@ -195,7 +200,26 @@ export function LivePageClient() {
                         <span className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold">
                           Yayıncı Kanalı
                         </span>
-                        <span className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-1.5 mt-1 font-mono">
+                        <span className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2 mt-1 font-mono">
+                          {siteAssets?.avatarUrl ? (
+                            <Image
+                              src={siteAssets.avatarUrl}
+                              alt="Avatar"
+                              width={20}
+                              height={20}
+                              className="rounded-full object-cover"
+                              unoptimized={process.env.NODE_ENV === "development"}
+                            />
+                          ) : siteAssets?.avatarPlaceholderUrl ? (
+                            <Image
+                              src={siteAssets.avatarPlaceholderUrl}
+                              alt="Avatar Placeholder"
+                              width={20}
+                              height={20}
+                              className="rounded-full object-cover"
+                              unoptimized={process.env.NODE_ENV === "development"}
+                            />
+                          ) : null}
                           @{siteConfig.kick.channelSlug}
                         </span>
                       </div>
@@ -215,13 +239,12 @@ export function LivePageClient() {
                     </span>
                   </div>
 
-                  {/* Chat Message List */}
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-[rgba(10,10,10,0.1)] gap-3">
-                    <MessageSquare className="w-8 h-8 text-zinc-600" />
+                    <MessageSquare className="w-8 h-8 text-zinc-600 animate-pulse" />
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold text-[var(--text-secondary)]">Canlı Sohbet Aktif Değil</span>
+                      <span className="text-xs font-semibold text-[var(--text-secondary)]">Gerçek sohbet entegrasyonu henüz tamamlanmadı.</span>
                       <span className="text-[10px] text-[var(--text-tertiary)] max-w-[220px] mx-auto">
-                        Sohbet akışını gerçek zamanlı takip etmek için doğrudan Kick kanalımızı ziyaret edebilirsiniz.
+                        Gelecekteki Kick WebSocket entegrasyonu için şablon soket yapısı hazırlandı.
                       </span>
                     </div>
                   </div>
@@ -288,10 +311,22 @@ export function LivePageClient() {
                   </div>
                 </div>
 
-                {/* Right side graphic or logo */}
-                <div className="hidden md:flex items-center justify-center shrink-0 w-32 h-32 rounded-full bg-gradient-to-tr from-[var(--accent-primary)]/10 to-indigo-500/10 border border-[var(--border-default)]">
-                  <Radio className="w-12 h-12 text-[var(--accent-primary)]" />
-                </div>
+                {siteAssets?.avatarUrl ? (
+                  <div className="hidden md:flex shrink-0 w-32 h-32 rounded-full overflow-hidden border border-[var(--border-default)] shadow-[var(--shadow-md)]">
+                    <Image
+                      src={siteAssets.avatarUrl}
+                      alt="Broadcaster Avatar"
+                      width={128}
+                      height={128}
+                      className="object-cover"
+                      unoptimized={process.env.NODE_ENV === "development"}
+                    />
+                  </div>
+                ) : (
+                  <div className="hidden md:flex items-center justify-center shrink-0 w-32 h-32 rounded-full bg-gradient-to-tr from-[var(--accent-primary)]/10 to-indigo-500/10 border border-[var(--border-default)]">
+                    <Radio className="w-12 h-12 text-[var(--accent-primary)]" />
+                  </div>
+                )}
               </GlassCard>
 
               {/* Previous Clips empty state showcase */}
@@ -316,52 +351,61 @@ export function LivePageClient() {
           )}
         </AnimatePresence>
 
-        {/* =========================================================================
-           UPCOMING SCHEDULE CALENDAR (COMMON TO BOTH STATES)
-           ========================================================================= */}
         <div className="mt-16 flex flex-col gap-6">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 flex items-center justify-center">
-              <Calendar className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
+              <Gamepad2 className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
             </div>
             <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-              Haftalık Yayın Takvimi
+              Topluluğun Son Oyun Önerileri
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {(scheduleData || []).map((sched, index) => (
-              <GlassCard
-                key={index}
-                className="p-5 border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-all duration-300 relative overflow-hidden group"
-              >
-                {/* Visual hover top gradient strip */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-transparent group-hover:bg-gradient-to-r group-hover:from-[var(--accent-primary)] group-hover:to-purple-500 transition-colors" />
+          {suggestionsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="animate-pulse h-[140px] rounded-xl bg-[var(--bg-overlay)]" />
+              ))}
+            </div>
+          ) : suggestions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-500 text-xs border border-dashed border-[var(--border-default)] rounded-xl bg-[rgba(10,10,10,0.1)] gap-2">
+              <Gamepad2 className="w-8 h-8 text-zinc-600" />
+              <span className="font-semibold text-[var(--text-secondary)]">Henüz oyun önerisi bulunmuyor.</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {suggestions.slice(0, 4).map((sug) => (
+                <GlassCard
+                  key={sug.id}
+                  className="p-5 border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-all duration-300 relative overflow-hidden group flex flex-col justify-between"
+                >
+                  <div className="absolute top-0 inset-x-0 h-1 bg-transparent group-hover:bg-gradient-to-r group-hover:from-[var(--accent-primary)] group-hover:to-purple-500 transition-colors" />
 
-                <div className="flex flex-col gap-3">
-                  <span className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold">
-                    {translateDay(sched.day)}
-                  </span>
-                  <div className="flex flex-col">
-                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                      {translateGame(sched.game)}
-                    </h3>
-                    <span className="text-xs font-mono text-[var(--text-secondary)] mt-1 flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-                      {sched.time}
+                  <div className="flex flex-col gap-3">
+                    <span className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-semibold">
+                      {sug.platform}
                     </span>
+                    <div className="flex flex-col">
+                      <h3 className="text-sm font-bold text-[var(--text-primary)] line-clamp-1">
+                        {sug.game}
+                      </h3>
+                      <p className="text-[10px] text-[var(--text-secondary)] line-clamp-2 mt-1 leading-relaxed">
+                        {sug.description}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] font-bold text-[var(--text-tertiary)] mt-2">
-                    <span className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
-                      {sched.platform}
+                  <div className="flex items-center justify-between text-[10px] font-bold text-[var(--text-tertiary)] pt-3 border-t border-[var(--border-subtle)] mt-3">
+                    <span className="truncate max-w-[90px]">Öneren: {sug.submittedBy}</span>
+                    <span className="flex items-center gap-1 text-[var(--accent-primary)]">
+                      <Users className="w-3.5 h-3.5" />
+                      {sug.votes} oy
                     </span>
                   </div>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
+                </GlassCard>
+              ))}
+            </div>
+          )}
         </div>
       </Container>
     </div>

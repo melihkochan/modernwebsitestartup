@@ -71,12 +71,11 @@ export function AdminSuggestionsControls() {
               key={item.id}
               className="group border border-[var(--border-default)] rounded-2xl overflow-hidden flex flex-col h-[400px] hover:border-[var(--accent-primary)]/40 hover:shadow-[0_4px_30px_rgba(0,242,154,0.03)] transition-all duration-300 relative"
             >
-              {/* Game Header Image with Status Badge overlay */}
               <div className="h-44 relative bg-zinc-950 overflow-hidden shrink-0">
-                {details?.headerImage ? (
+                {(details?.headerImage || item.coverImageUrl) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={details.headerImage}
+                    src={details?.headerImage || item.coverImageUrl || ""}
                     alt={item.game}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />

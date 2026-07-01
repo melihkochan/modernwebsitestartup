@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useCallback } from "react";
-import { listFiles, uploadFile, deleteFile, renameFile } from "../services/media-repository";
+import { listFiles, uploadFile, deleteFile, renameFile, getFileUsageContext } from "../services/media-repository";
 import type { MediaBucket, MediaFile, UploadProgress } from "../types/media-types";
 
 // ---------------------------------------------------------------------------
@@ -187,4 +187,12 @@ export function useAllMediaFiles() {
     isLoading: gallery.isLoading || avatars.isLoading || thumbnails.isLoading,
     error: gallery.error ?? avatars.error ?? thumbnails.error,
   };
+}
+
+export function useFileUsage(publicUrl: string) {
+  return useQuery({
+    queryKey: ["media", "usage", publicUrl],
+    queryFn: () => getFileUsageContext(publicUrl),
+    staleTime: 5000,
+  });
 }

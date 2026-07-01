@@ -24,6 +24,8 @@ import { Container } from "@/components/layout/container";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { formatNumber } from "@/lib/utils";
+import Image from "next/image";
+import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
 import { cn } from "@/lib/utils";
 
 interface TooltipPayloadItem {
@@ -147,6 +149,7 @@ const MONTHLY_DATA = [
 ];
 
 export function AnalyticsPageClient() {
+  const { data: siteAssets } = useSiteAssets();
   const [mounted, setMounted] = useState(false);
   const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("daily");
   const [activeMetric, setActiveMetric] = useState<"viewers" | "followers" | "hours">("viewers");
@@ -199,9 +202,21 @@ export function AnalyticsPageClient() {
                 Updated hourly
               </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)] leading-tight" style={{ fontFamily: "var(--font-outfit)" }}>
-              The Story Told in Numbers
-            </h1>
+            <div className="flex items-center gap-4">
+              {siteAssets?.avatarUrl && (
+                <Image
+                  src={siteAssets.avatarUrl}
+                  alt="Avatar"
+                  width={48}
+                  height={48}
+                  className="rounded-full object-cover border border-[var(--border-default)]"
+                  unoptimized={process.env.NODE_ENV === "development"}
+                />
+              )}
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)] leading-tight" style={{ fontFamily: "var(--font-outfit)" }}>
+                The Story Told in Numbers
+              </h1>
+            </div>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
               Explore the growth metrics, average viewership patterns, streaming times, and community milestones over time.
             </p>

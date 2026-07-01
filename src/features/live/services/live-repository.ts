@@ -51,14 +51,25 @@ const supabaseLiveRepository: LiveRepository = {
         .maybeSingle();
 
       if (error) throw new RepositoryError(error.message, "FETCH_STREAM_INFO_FAILED", error);
-      if (!data) return MOCK_STREAM_INFO;
+      if (!data) {
+        return {
+          isLive: false,
+          viewerCount: 0,
+          currentGame: "Kategori bilgisi alınamadı.",
+          streamTitle: "Güncel yayın bulunmuyor.",
+          startedAt: "",
+          thumbnailUrl: null,
+        };
+      }
 
+      const isLive = data.is_live ?? false;
       return {
-        isLive: data.is_live ?? false,
+        isLive,
         viewerCount: data.viewer_count ?? 0,
-        currentGame: data.current_game || "Offline",
-        streamTitle: data.stream_title || "",
-        startedAt: data.started_at || "",
+        currentGame: isLive ? (data.current_game || "Kategori bilgisi alınamadı.") : "Kategori bilgisi alınamadı.",
+        streamTitle: isLive ? (data.stream_title || "Başlıksız Yayın") : "Güncel yayın bulunmuyor.",
+        startedAt: isLive ? (data.started_at || "") : "",
+        thumbnailUrl: isLive ? (data.thumbnail_url || null) : null,
       };
     } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;

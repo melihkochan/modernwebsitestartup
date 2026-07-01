@@ -130,7 +130,12 @@ const supabaseCommunityRepository: CommunityRepository = {
     try {
       const { data, error } = await supabase
         .from("game_suggestions")
-        .select("*")
+        .select(`
+          *,
+          profiles:suggested_by (
+            username
+          )
+        `)
         .order("votes_count", { ascending: false });
 
       if (error) throw new RepositoryError(error.message, "FETCH_SUGGESTIONS_FAILED", error);
@@ -140,10 +145,12 @@ const supabaseCommunityRepository: CommunityRepository = {
         id: d.id,
         game: d.game_title,
         votes: d.votes_count,
-        submittedBy: d.suggested_by || "Anonymous",
-        platform: "PC / Console",
-        description: d.admin_note || "No admin notes.",
+        submittedBy: (d as any).profiles?.username || "Anonim",
+        platform: d.platform || "PC",
+        description: d.admin_note || "",
         isUpvoted: false,
+        steamAppId: d.steam_appid,
+        coverImageUrl: d.cover_image_url,
       }));
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
@@ -163,8 +170,16 @@ const supabaseCommunityRepository: CommunityRepository = {
           votes_count: 1,
           status: "pending",
           admin_note: game.description,
+          steam_appid: game.steamAppId || null,
+          cover_image_url: game.coverImageUrl || null,
+          platform: game.platform || null,
         })
-        .select()
+        .select(`
+          *,
+          profiles:suggested_by (
+            username
+          )
+        `)
         .single();
 
       if (error) throw new RepositoryError(error.message, "SUGGEST_GAME_FAILED", error);
@@ -174,10 +189,12 @@ const supabaseCommunityRepository: CommunityRepository = {
         id: data.id,
         game: data.game_title,
         votes: data.votes_count,
-        submittedBy: data.suggested_by || "Anonymous",
-        platform: "PC / Console",
+        submittedBy: (data as any).profiles?.username || "Anonim",
+        platform: data.platform || "PC",
         description: data.admin_note || "",
         isUpvoted: true,
+        steamAppId: data.steam_appid,
+        coverImageUrl: data.cover_image_url,
       };
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
@@ -236,16 +253,78 @@ const supabaseCommunityRepository: CommunityRepository = {
   },
 
   async castVote(pollId: string, optionId: string): Promise<Poll> {
-    // Staging mock return as mutation logic varies depending on json updates
-    return mockCommunityRepository.castVote(pollId, optionId);
+    const supabase = createClient();
+    try {
+      let fingerprint = typeof window !== "undefined" ? localStorage.getItem("vote_fingerprint") : null;
+      if (!fingerprint) {
+        fingerprint = "anon_" + Math.random().toString(36).substring(2, 15);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("vote_fingerprint", fingerprint);
+        }
+      }
+
+      const { error } = await supabase.rpc("cast_poll_vote", {
+        poll_id: pollId,
+        option_id: optionId,
+        fingerprint: fingerprint,
+      });
+
+      if (error) throw new RepositoryError(error.message, "CAST_VOTE_FAILED", error);
+      return this.getActivePoll();
+    } catch (err) {
+      if (err instanceof RepositoryError) throw err;
+      throw new RepositoryError("Failed to cast vote", "CAST_VOTE_FAILED", err);
+    }
   },
 
   async getFanMessages(): Promise<FanMessage[]> {
-    return mockCommunityRepository.getFanMessages();
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase
+        .from("fan_messages")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw new RepositoryError(error.message, "FETCH_MESSAGES_FAILED", error);
+      if (!data) return [];
+
+      return data.map((d) => ({
+        id: d.id,
+        username: d.username,
+        message: d.message,
+        time: new Date(d.created_at).toLocaleDateString("tr-TR"),
+      }));
+    } catch (err) {
+      if (err instanceof RepositoryError) throw err;
+      throw new RepositoryError("Failed to fetch fan messages", "FETCH_MESSAGES_FAILED", err);
+    }
   },
 
   async addFanMessage(username: string, message: string): Promise<FanMessage> {
-    return mockCommunityRepository.addFanMessage(username, message);
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase
+        .from("fan_messages")
+        .insert({
+          username,
+          message,
+        })
+        .select()
+        .single();
+
+      if (error) throw new RepositoryError(error.message, "ADD_MESSAGE_FAILED", error);
+      if (!data) throw new RepositoryError("No data returned from insert", "ADD_MESSAGE_FAILED");
+
+      return {
+        id: data.id,
+        username: data.username,
+        message: data.message,
+        time: new Date(data.created_at).toLocaleDateString("tr-TR"),
+      };
+    } catch (err) {
+      if (err instanceof RepositoryError) throw err;
+      throw new RepositoryError("Failed to add message", "ADD_MESSAGE_FAILED", err);
+    }
   },
 };
 

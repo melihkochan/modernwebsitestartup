@@ -8,6 +8,8 @@ export const gameSuggestionSchema = z.object({
   platform: z.string(),
   description: z.string().min(1, "Description is required"),
   isUpvoted: z.boolean().optional(),
+  steamAppId: z.number().nullable().optional(),
+  coverImageUrl: z.string().nullable().optional(),
 });
 
 export const pollOptionSchema = z.object({

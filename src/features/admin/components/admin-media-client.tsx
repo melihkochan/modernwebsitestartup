@@ -15,10 +15,15 @@ import {
   Pencil,
   X,
   Play,
+  Bookmark,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { useMediaList, useDeleteFile, useRenameFile, formatFileSize } from "@/features/media/hooks/use-media";
+import { useMediaList, useDeleteFile, useRenameFile, formatFileSize, useFileUsage } from "@/features/media/hooks/use-media";
+import { useUpdateSiteAssets } from "@/features/media/hooks/use-site-assets";
+import { Badge } from "@/components/ui/badge";
+import { GlassCard } from "@/components/ui/glass-card";
+import { Button } from "@/components/ui/button";
 import { MediaUploadZone } from "@/features/media/components/media-upload-zone";
 import { buildCopyContent } from "@/features/media/services/media-repository";
 import type { MediaBucket, MediaFile, MediaViewMode, CopyFormat } from "@/features/media/types/media-types";
@@ -93,13 +98,16 @@ function FileCardGrid({
   onCopy: _onCopy,
   onRename,
   onPreview,
+  onAssignUsage,
 }: {
   file: MediaFile;
   onDelete: (file: MediaFile) => void;
   onCopy?: (file: MediaFile, format: CopyFormat) => void;
   onRename: (file: MediaFile) => void;
   onPreview: (file: MediaFile) => void;
+  onAssignUsage: (file: MediaFile) => void;
 }) {
+  const { data: usage = [] } = useFileUsage(file.publicUrl);
   const [showCopyMenu, setShowCopyMenu] = useState(false);
   const [copiedFormat, setCopiedFormat] = useState<CopyFormat | null>(null);
   
@@ -118,11 +126,19 @@ function FileCardGrid({
 
   return (
     <div className="group relative rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] overflow-hidden hover:border-[var(--border-strong)] transition-all flex flex-col h-full">
-      {/* Görsel önizleme */}
       <div 
         onClick={() => onPreview(file)}
-        className="relative aspect-square bg-[var(--bg-overlay)] cursor-pointer overflow-hidden"
+        className="relative aspect-square bg-[var(--bg-overlay)] cursor-pointer overflow-hidden animate-fade-in"
       >
+        {usage.length > 0 && (
+          <div className="absolute top-2 left-2 z-20 flex flex-wrap gap-1 max-w-[85%]">
+            {usage.map((u) => (
+              <Badge key={u} className="bg-[var(--accent-primary)]/80 backdrop-blur-sm text-white text-[8px] uppercase tracking-wider px-1.5 py-0.5 border-none font-bold">
+                {u}
+              </Badge>
+            ))}
+          </div>
+        )}
         {isImage ? (
           <Image
             src={file.publicUrl}
@@ -154,7 +170,6 @@ function FileCardGrid({
           </div>
         )}
 
-        {/* Hover aksiyon katmanı */}
         <div 
           onClick={(e) => e.stopPropagation()}
           className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 z-10"
@@ -165,6 +180,13 @@ function FileCardGrid({
             title="Yeniden Adlandır"
           >
             <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onAssignUsage(file)}
+            className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+            title="Kullanım Konumu Ata"
+          >
+            <Bookmark className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onPreview(file)}
@@ -246,13 +268,16 @@ function FileRowList({
   onCopy,
   onRename,
   onPreview,
+  onAssignUsage,
 }: {
   file: MediaFile;
   onDelete: (file: MediaFile) => void;
   onCopy: (file: MediaFile, format: CopyFormat) => void;
   onRename: (file: MediaFile) => void;
   onPreview: (file: MediaFile) => void;
+  onAssignUsage: (file: MediaFile) => void;
 }) {
+  const { data: usage = [] } = useFileUsage(file.publicUrl);
   const [copiedFormat, setCopiedFormat] = useState<CopyFormat | null>(null);
   
   const isImage = file.mimeType.startsWith("image/");
@@ -272,7 +297,6 @@ function FileRowList({
       onClick={() => onPreview(file)}
       className="flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)] cursor-pointer transition-all group select-none"
     >
-      {/* Küçük önizleme */}
       <div className="w-10 h-10 rounded-lg bg-[var(--bg-overlay)] flex-shrink-0 relative overflow-hidden">
         {isImage ? (
           <Image
@@ -304,7 +328,6 @@ function FileRowList({
         )}
       </div>
 
-      {/* Dosya adı */}
       <div className="flex-1 min-w-0">
         <p
           className="text-xs font-semibold truncate"
@@ -323,11 +346,28 @@ function FileRowList({
         </p>
       </div>
 
-      {/* Aksiyon butonları */}
+      {usage.length > 0 && (
+        <div className="flex flex-wrap gap-1 max-w-[200px] justify-end shrink-0 select-none mr-2">
+          {usage.map((u) => (
+            <Badge key={u} className="bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-[8px] uppercase tracking-wider px-1.5 py-0.5 border border-[var(--accent-primary)]/20 font-bold shrink-0">
+              {u}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       <div 
         onClick={(e) => e.stopPropagation()}
         className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
       >
+        <button
+          onClick={() => onAssignUsage(file)}
+          className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded cursor-pointer transition-colors text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10"
+          title="Kullanım Konumu Ata"
+        >
+          <Bookmark className="w-3.5 h-3.5" />
+          Kullanım Ata
+        </button>
         <button
           onClick={() => handleCopy("url")}
           className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded cursor-pointer transition-colors"
@@ -448,10 +488,13 @@ function RenameModal({
 function PreviewModal({
   file,
   onClose,
+  onAssignUsage,
 }: {
   file: MediaFile;
   onClose: () => void;
+  onAssignUsage: (file: MediaFile) => void;
 }) {
+  const { data: usage = [] } = useFileUsage(file.publicUrl);
   const isVideo = file.mimeType.startsWith("video/") || file.name.toLowerCase().endsWith(".mov");
   const [copiedFormat, setCopiedFormat] = useState<CopyFormat | null>(null);
 
@@ -473,7 +516,6 @@ function PreviewModal({
         onClick={(e) => e.stopPropagation()}
         className="bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-[var(--radius-xl)] max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-[var(--shadow-xl)]"
       >
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-default)]">
           <div className="min-w-0">
             <h3 className="text-sm font-bold truncate" style={{ color: "#ededed" }}>
@@ -488,7 +530,6 @@ function PreviewModal({
           </button>
         </div>
 
-        {/* Önizleme İçeriği */}
         <div className="flex-1 overflow-auto p-6 flex items-center justify-center bg-black/40 min-h-[300px] relative">
           {isVideo ? (
             <video
@@ -513,12 +554,30 @@ function PreviewModal({
           )}
         </div>
 
-        {/* Footer ve Kopyalama Butonları */}
         <div className="p-4 border-t border-[var(--border-default)] bg-[var(--bg-surface)] flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <p className="text-[10px]" style={{ color: "#71717a" }}>
-            Yükleme Tarihi: {new Date(file.createdAt).toLocaleDateString("tr-TR")}
-          </p>
+          <div className="flex flex-col gap-1.5 items-start">
+            <p className="text-[10px]" style={{ color: "#71717a" }}>
+              Yükleme Tarihi: {new Date(file.createdAt).toLocaleDateString("tr-TR")}
+            </p>
+            {usage.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 items-center">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase">Kullanım Alanları:</span>
+                {usage.map((u) => (
+                  <Badge key={u} className="bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] text-[8px] uppercase tracking-wider px-1.5 py-0.5 border border-[var(--accent-primary)]/20 font-bold">
+                    {u}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex flex-wrap gap-1.5 justify-end">
+            <button
+              onClick={() => onAssignUsage(file)}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white border-none transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Bookmark className="w-3.5 h-3.5" />
+              Kullanım Ata
+            </button>
             {(Object.entries(COPY_FORMAT_LABELS) as [CopyFormat, string][]).map(([format, label]) => (
               <button
                 key={format}
@@ -548,10 +607,12 @@ export function AdminMediaClient() {
   const [deleteTarget, setDeleteTarget] = useState<MediaFile | null>(null);
   const [renameTarget, setRenameTarget] = useState<MediaFile | null>(null);
   const [previewTarget, setPreviewTarget] = useState<MediaFile | null>(null);
+  const [assignTarget, setAssignTarget] = useState<MediaFile | null>(null);
 
   const { data: files = [], isLoading, refetch } = useMediaList(activeBucket);
   const { mutate: deleteFile } = useDeleteFile();
   const { mutate: renameFile } = useRenameFile();
+  const updateAssetsMutation = useUpdateSiteAssets();
 
   // Arama filtresi
   const filteredFiles = files.filter((f) =>
@@ -704,7 +765,6 @@ export function AdminMediaClient() {
         </div>
       )}
 
-      {/* Grid Görünümü */}
       {!isLoading && filteredFiles.length > 0 && viewMode === "grid" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filteredFiles.map((file) => (
@@ -715,12 +775,12 @@ export function AdminMediaClient() {
               onCopy={() => {}}
               onRename={setRenameTarget}
               onPreview={setPreviewTarget}
+              onAssignUsage={setAssignTarget}
             />
           ))}
         </div>
       )}
 
-      {/* Liste Görünümü */}
       {!isLoading && filteredFiles.length > 0 && viewMode === "list" && (
         <div className="flex flex-col gap-2">
           {filteredFiles.map((file) => (
@@ -731,12 +791,12 @@ export function AdminMediaClient() {
               onCopy={() => {}}
               onRename={setRenameTarget}
               onPreview={setPreviewTarget}
+              onAssignUsage={setAssignTarget}
             />
           ))}
         </div>
       )}
 
-      {/* Silme Onay Dialog */}
       {deleteTarget && (
         <ConfirmDialog
           fileName={deleteTarget.name}
@@ -745,7 +805,6 @@ export function AdminMediaClient() {
         />
       )}
 
-      {/* Yeniden Adlandırma Modalı */}
       {renameTarget && (
         <RenameModal
           file={renameTarget}
@@ -754,13 +813,123 @@ export function AdminMediaClient() {
         />
       )}
 
-      {/* Önizleme Modalı */}
       {previewTarget && (
         <PreviewModal
           file={previewTarget}
           onClose={() => setPreviewTarget(null)}
+          onAssignUsage={setAssignTarget}
         />
       )}
+
+      {assignTarget && (
+        <AssignUsageModal
+          file={assignTarget}
+          onCancel={() => setAssignTarget(null)}
+          onConfirm={async (key) => {
+            try {
+              await updateAssetsMutation.mutateAsync({
+                [key]: assignTarget.publicUrl,
+              });
+              setAssignTarget(null);
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+          isPending={updateAssetsMutation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function AssignUsageModal({
+  file,
+  onCancel,
+  onConfirm,
+  isPending,
+}: {
+  file: MediaFile;
+  onCancel: () => void;
+  onConfirm: (key: string) => void;
+  isPending: boolean;
+}) {
+  const [selectedKey, setSelectedKey] = useState<string>("logoUrl");
+
+  const usages = [
+    { key: "logoUrl", label: "Logo (Varsayılan)" },
+    { key: "faviconUrl", label: "Favicon" },
+    { key: "avatarUrl", label: "Yayıncı Avatarı" },
+    { key: "heroBannerUrl", label: "Hero Banner" },
+    { key: "whiteLogoUrl", label: "Beyaz Logo" },
+    { key: "darkLogoUrl", label: "Koyu Logo" },
+    { key: "offlineCoverUrl", label: "Offline Kapak Görseli" },
+    { key: "defaultThumbnailUrl", label: "Varsayılan Yayın Görseli" },
+    { key: "illustration404Url", label: "404 Sayfa İllüstrasyonu" },
+    { key: "ogImageUrl", label: "OpenGraph Resmi" },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <GlassCard className="w-full max-w-md border border-[var(--border-default)] bg-[rgba(10,10,10,0.98)] rounded-xl p-6 shadow-[var(--shadow-xl)] flex flex-col gap-4">
+        <div>
+          <h3 className="text-base font-bold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
+            Kullanım Konumu Ata
+          </h3>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">
+            Seçilen dosyayı site genelindeki bir marka varlığı olarak atayın.
+          </p>
+        </div>
+
+        <div className="p-3 bg-[var(--bg-overlay)] rounded-lg border border-[var(--border-default)] flex items-center gap-3">
+          <div className="w-16 h-10 relative bg-black/40 rounded overflow-hidden flex-shrink-0">
+            {file.mimeType.startsWith("image/") ? (
+              <Image src={file.publicUrl} alt={file.name} fill className="object-cover" unoptimized />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-zinc-500 bg-zinc-900/60">
+                <Play className="w-4 h-4 fill-current" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[var(--text-primary)] truncate">{file.name}</p>
+            <p className="text-[10px] text-[var(--text-tertiary)] truncate">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 max-h-60 overflow-y-auto pr-1">
+          {usages.map((usage) => (
+            <button
+              key={usage.key}
+              type="button"
+              onClick={() => setSelectedKey(usage.key)}
+              className={cn(
+                "w-full flex items-center justify-between px-3 py-2 text-xs font-semibold rounded-lg transition-colors text-left border cursor-pointer",
+                selectedKey === usage.key
+                  ? "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/40 text-[var(--text-primary)] animate-fade-in"
+                  : "bg-transparent border-[var(--border-default)] hover:bg-[var(--bg-overlay)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              )}
+            >
+              <span>{usage.label}</span>
+              {selectedKey === usage.key && <Check className="w-3.5 h-3.5 text-[var(--accent-primary)]" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 justify-end mt-2">
+          <Button type="button" onClick={onCancel} variant="outline" className="h-9 px-4 text-xs cursor-pointer">
+            İptal
+          </Button>
+          <Button
+            type="button"
+            disabled={isPending}
+            onClick={() => onConfirm(selectedKey)}
+            className="h-9 px-4 text-xs bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white border-none cursor-pointer flex items-center gap-1.5"
+          >
+            {isPending && <RefreshCw className="w-3 animate-spin" />}
+            Ata ve Kaydet
+          </Button>
+        </div>
+      </GlassCard>
     </div>
   );
 }

@@ -338,3 +338,77 @@ export function buildCopyContent(
       return publicUrl;
   }
 }
+
+export async function getFileUsageContext(publicUrl: string): Promise<string[]> {
+  const supabase = createClient();
+  const contexts: string[] = [];
+
+  try {
+    const { data: assets } = await supabase
+      .from("site_assets")
+      .select("logo_url, favicon_url, avatar_placeholder_url, image_placeholder_url, og_image_url, avatar_url, hero_banner_url, white_logo_url, dark_logo_url, offline_cover_url, default_thumbnail_url, illustration_404_url")
+      .limit(1)
+      .maybeSingle();
+
+    if (assets) {
+      if (assets.avatar_url === publicUrl) contexts.push("Avatar");
+      if (assets.logo_url === publicUrl) contexts.push("Navbar Logo");
+      if (assets.white_logo_url === publicUrl) contexts.push("White Logo");
+      if (assets.dark_logo_url === publicUrl) contexts.push("Dark Logo");
+      if (assets.offline_cover_url === publicUrl) contexts.push("Offline Cover");
+      if (assets.default_thumbnail_url === publicUrl) contexts.push("Default Thumbnail");
+      if (assets.illustration_404_url === publicUrl) contexts.push("404 Illustration");
+      if (assets.hero_banner_url === publicUrl) contexts.push("Hero Banner");
+      if (assets.og_image_url === publicUrl) contexts.push("Open Graph Image");
+    }
+
+    const { data: clips } = await supabase
+      .from("clips")
+      .select("video_url, thumbnail_url")
+      .or(`video_url.eq.${publicUrl},thumbnail_url.eq.${publicUrl}`);
+
+    if (clips && clips.length > 0) {
+      clips.forEach((c) => {
+        if (c.video_url === publicUrl) contexts.push("Featured Clip (Video)");
+        if (c.thumbnail_url === publicUrl) contexts.push("Featured Clip (Thumbnail)");
+      });
+    }
+
+    const { data: galleryItems } = await supabase
+      .from("gallery")
+      .select("is_featured")
+      .eq("image_url", publicUrl);
+
+    if (galleryItems && galleryItems.length > 0) {
+      galleryItems.forEach((g) => {
+        if (g.is_featured) {
+          contexts.push("Featured Gallery");
+        } else {
+          contexts.push("Gallery");
+        }
+      });
+    }
+
+    const { data: setupItems } = await supabase
+      .from("setup_items")
+      .select("id")
+      .eq("image_url", publicUrl);
+
+    if (setupItems && setupItems.length > 0) {
+      contexts.push("Setup Item Image");
+    }
+
+    const { data: timelineItems } = await supabase
+      .from("timeline")
+      .select("id")
+      .eq("media_url", publicUrl);
+
+    if (timelineItems && timelineItems.length > 0) {
+      contexts.push("Timeline Event Media");
+    }
+  } catch (err) {
+    console.error("Failed to check file usage:", err);
+  }
+
+  return Array.from(new Set(contexts));
+}

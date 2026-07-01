@@ -1,19 +1,28 @@
 "use client";
- 
+
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Users, MessageSquare, Tv, Clock, RefreshCw, Info } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useCreatorStats } from "../hooks/use-admin";
+import { useCreatorStats, useTriggerCreatorSync } from "../hooks/use-admin";
 
 export function AdminLiveControls() {
   const { data: stats, isLoading } = useCreatorStats();
+  const { mutate: triggerSync } = useTriggerCreatorSync();
   const isLive = stats?.isLive ?? false;
   const viewerCount = stats?.viewerCount ?? 0;
 
-  // Real-time client-side uptime calculation
   const [uptime, setUptime] = useState<string>("00:00:00");
+
+  useEffect(() => {
+    triggerSync();
+    const interval = setInterval(() => {
+      triggerSync();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [triggerSync]);
 
   useEffect(() => {
     if (!isLive || !stats?.startedAt) {
@@ -58,7 +67,6 @@ export function AdminLiveControls() {
 
   return (
     <div className="flex flex-col gap-8 w-full">
-      {/* Page Header */}
       <GlassCard className="p-6 border border-[var(--border-default)] bg-[rgba(10,10,10,0.45)] rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-[var(--shadow-sm)]">
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
@@ -80,59 +88,88 @@ export function AdminLiveControls() {
         </div>
       </GlassCard>
 
-      {/* Main Grid Monitor */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* Left Area (8 cols): Real Uptime, Title & Info panel / Chat placeholder */}
         <div className="lg:col-span-8 flex flex-col gap-8">
-          <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-6">
+          <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-6 animate-fade-in">
             <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3">
               <Tv className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
               Canlı Yayın Özeti
             </h2>
 
-            {isLive ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Yayın Başlığı</span>
-                    <h3 className="text-sm sm:text-base font-extrabold text-[var(--text-primary)] mt-1">
-                      {stats?.streamTitle || "Başlıksız Yayın"}
-                    </h3>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="md:col-span-4 relative aspect-[16/9] w-full bg-zinc-950 border border-[var(--border-default)] rounded-xl overflow-hidden shadow-md">
+                {stats?.thumbnailUrl ? (
+                  <Image
+                    src={stats.thumbnailUrl}
+                    alt={stats.streamTitle || "Canlı Yayın"}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-zinc-900/60 gap-2">
+                    <Tv className="w-8 h-8 text-zinc-500" />
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Yayın Thumbnail Bulunmuyor</span>
                   </div>
-                  <div>
+                )}
+                <div className="absolute top-2 left-2 z-10">
+                  <Badge className={cn("border-none text-white text-[9px] font-bold px-1.5 py-0.5", isLive ? "bg-[var(--live-red)] animate-pulse" : "bg-zinc-700")}>
+                    {isLive ? "CANLI" : "ÇEVRİMDIŞI"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="md:col-span-8 flex flex-col gap-4 font-sans text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-2.5">
+                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Yayın Başlığı</span>
+                    <span className="font-bold text-[var(--text-primary)] truncate mt-0.5" title={stats?.streamTitle || "Güncel yayın bulunmuyor."}>
+                      {stats?.streamTitle || "Güncel yayın bulunmuyor."}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-2.5">
                     <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Kategori / Oyun</span>
-                    <div className="mt-1">
-                      <Badge variant="outline" className="border-zinc-800 text-[var(--text-secondary)] text-[10px]">
-                        {stats?.currentGame || "Bilinmiyor"}
-                      </Badge>
-                    </div>
+                    <span className="font-bold text-[var(--text-primary)] truncate mt-0.5" title={stats?.currentGame || "Kategori bilgisi alınamadı."}>
+                      {stats?.currentGame || "Kategori bilgisi alınamadı."}
+                    </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-[rgba(10,10,10,0.15)] border border-[var(--border-default)] rounded-xl flex flex-col justify-center">
-                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Aktif İzleyici</span>
-                    <span className="text-lg font-extrabold text-[var(--text-primary)] font-mono mt-1 flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-blue-400" />
-                      {viewerCount.toLocaleString()}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-[11px]">
+                  <div className="p-3 bg-[rgba(10,10,10,0.15)] border border-[var(--border-default)] rounded-xl flex flex-col justify-center">
+                    <span className="text-[9px] text-[var(--text-tertiary)] uppercase font-semibold">İzleyici Sayısı</span>
+                    <span className="text-sm font-extrabold text-[var(--text-primary)] mt-1 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-blue-400" />
+                      {isLive ? viewerCount.toLocaleString() : 0}
                     </span>
                   </div>
-                  <div className="p-4 bg-[rgba(10,10,10,0.15)] border border-[var(--border-default)] rounded-xl flex flex-col justify-center">
-                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Yayın Süresi</span>
-                    <span className="text-lg font-extrabold text-[var(--text-primary)] font-mono mt-1 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-amber-400" />
-                      {uptime}
+                  <div className="p-3 bg-[rgba(10,10,10,0.15)] border border-[var(--border-default)] rounded-xl flex flex-col justify-center">
+                    <span className="text-[9px] text-[var(--text-tertiary)] uppercase font-semibold">Yayın Süresi</span>
+                    <span className="text-sm font-extrabold text-[var(--text-primary)] mt-1 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      {isLive ? uptime : "00:00:00"}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-[rgba(10,10,10,0.15)] border border-[var(--border-default)] rounded-xl flex flex-col justify-center">
+                    <span className="text-[9px] text-[var(--text-tertiary)] uppercase font-semibold">Son Eşitleme</span>
+                    <span className="text-[10px] font-extrabold text-[var(--text-primary)] mt-1 truncate">
+                      {stats?.lastCheckedAt ? new Date(stats.lastCheckedAt).toLocaleTimeString("tr-TR") : "Bilinmiyor"}
                     </span>
                   </div>
                 </div>
+
+                {stats?.streamUrl && (
+                  <a
+                    href={stats.streamUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="self-start text-[10px] font-bold text-[var(--accent-primary)] hover:underline flex items-center gap-1 bg-[var(--accent-primary)]/5 border border-[var(--accent-primary)]/20 px-2.5 py-1 rounded-lg transition-all"
+                  >
+                    Yayını Kick&apos;te İzle →
+                  </a>
+                )}
               </div>
-            ) : (
-              <div className="p-8 text-center text-xs text-[var(--text-tertiary)] border border-dashed border-[var(--border-default)] rounded-xl flex flex-col items-center justify-center gap-2 bg-[rgba(10,10,10,0.1)]">
-                <Info className="w-6 h-6 text-zinc-500" />
-                <span>Kanal şu anda çevrimdışı. Canlı yayın başladığında ve senkronizasyon çalıştığında veriler burada görünecektir.</span>
-              </div>
-            )}
+            </div>
           </GlassCard>
 
           <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4 min-h-[300px]">
@@ -152,7 +189,6 @@ export function AdminLiveControls() {
           </GlassCard>
         </div>
 
-        {/* Right Area (4 cols): Events summary & Sync telemetry */}
         <div className="lg:col-span-4 flex flex-col gap-8">
           <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4">
             <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3">
@@ -215,7 +251,6 @@ export function AdminLiveControls() {
             )}
           </GlassCard>
         </div>
-
       </div>
     </div>
   );
