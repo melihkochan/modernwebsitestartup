@@ -27,7 +27,7 @@ const gapMap = { sm: "gap-3", md: "gap-4", lg: "gap-6" } as const;
  * <BentoGrid cols={3} gap="md">
  *   <BentoCell span={2} rowSpan={2}>Large hero cell</BentoCell>
  *   <BentoCell span={1}>Stat</BentoCell>
- *   <BentoCell span={1}>Clip</BentoCell>
+ *   <BentoCell span={1}>Card</BentoCell>
  * </BentoGrid>
  */
 export function BentoGrid({

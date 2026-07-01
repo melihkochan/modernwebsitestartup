@@ -28,8 +28,6 @@ import {
   useUpvoteSuggestion,
   useActivePoll,
   useCastVote,
-  useFanMessages,
-  useAddFanMessage,
 } from "../hooks/use-community";
 import { cn } from "@/lib/utils";
 
@@ -53,24 +51,18 @@ interface PollOption {
   votes: number;
 }
 
-interface FanMessage {
-  id: string;
-  username: string;
-  message: string;
-  time: string;
-}
+
 
 export function CommunityPageClient() {
   const { data: siteAssets } = useSiteAssets();
   const { data: suggestions = [] } = useSuggestions();
   const { data: poll } = useActivePoll();
-  const { data: fanMessages = [] } = useFanMessages();
   const { data: currentUser } = useCurrentUser();
 
   const suggestMutation = useSuggestGame();
   const upvoteMutation = useUpvoteSuggestion();
   const voteMutation = useCastVote();
-  const addMessageMutation = useAddFanMessage();
+
 
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -79,8 +71,7 @@ export function CommunityPageClient() {
   const [selectedSteamGame, setSelectedSteamGame] = useState<SteamGame | null>(null);
   const [newGameDesc, setNewGameDesc] = useState("");
 
-  const [newMessageText, setNewMessageText] = useState("");
-  const [newMessageUser, setNewMessageUser] = useState("");
+
 
   const handleUpvote = (id: string) => {
     upvoteMutation.mutate(id);
@@ -115,22 +106,7 @@ export function CommunityPageClient() {
     voteMutation.mutate({ pollId: poll.id, optionId });
   };
 
-  const handleMessageSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessageText.trim()) return;
 
-    try {
-      await addMessageMutation.mutateAsync({
-        username: newMessageUser.trim() || "Anonim",
-        message: newMessageText,
-      });
-
-      setNewMessageText("");
-      setNewMessageUser("");
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const pollOptions = poll?.options ?? [];
   const totalPollVotes = poll?.totalVotes ?? 0;
@@ -359,68 +335,7 @@ export function CommunityPageClient() {
               )}
             </GlassCard>
 
-            {/* Fan Message Wall (Guestbook) */}
-            <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-5 overflow-hidden">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-amber-400" />
-                <h2 className="text-lg font-bold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-                  Fan Wall Messages
-                </h2>
-              </div>
 
-              {/* Message Input Form */}
-              <form onSubmit={handleMessageSubmit} className="flex flex-col gap-3 bg-[rgba(10,10,10,0.25)] p-4 rounded-lg border border-[var(--border-subtle)]">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Nickname"
-                    value={newMessageUser}
-                    onChange={(e) => setNewMessageUser(e.target.value)}
-                    className="h-8 text-xs bg-[var(--bg-base)]"
-                    maxLength={15}
-                  />
-                  <Badge variant="outline" className="border-amber-400/20 text-amber-400 font-bold shrink-0 self-center">
-                    GUEST
-                  </Badge>
-                </div>
-                <Textarea
-                  placeholder="Leave a message on the wall..."
-                  value={newMessageText}
-                  onChange={(e) => setNewMessageText(e.target.value)}
-                  className="min-h-[64px] text-xs bg-[var(--bg-base)] resize-none"
-                  maxLength={100}
-                />
-                <Button
-                  type="submit"
-                  disabled={!newMessageText.trim()}
-                  className="h-8 text-xs font-semibold bg-amber-500 hover:bg-amber-600 border-none text-[var(--bg-base)] cursor-pointer self-end"
-                >
-                  Post Message
-                </Button>
-              </form>
-
-              {/* Messages display area */}
-              <div className="flex flex-col gap-3 max-h-[250px] overflow-y-auto pr-1.5 scrollbar-thin scrollbar-thumb-[var(--border-default)]">
-                <AnimatePresence initial={false}>
-                  {fanMessages.map((msg) => (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="p-3 bg-[var(--bg-overlay)] rounded-lg border border-[var(--border-default)] flex flex-col gap-1 text-xs"
-                    >
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="font-bold text-[var(--text-secondary)]">{msg.username}</span>
-                        <span className="text-[10px] text-[var(--text-tertiary)] font-mono">{msg.time}</span>
-                      </div>
-                      <p className="text-[var(--text-primary)] pl-0.5 leading-relaxed font-medium">
-                        {msg.message}
-                      </p>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            </GlassCard>
 
           </div>
         </div>

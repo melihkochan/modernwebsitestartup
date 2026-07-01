@@ -61,7 +61,11 @@ const supabaseGalleryRepository: GalleryRepository = {
       const { data, error } = await query;
 
       if (error) {
-        throw new RepositoryError(error.message, "FETCH_GALLERY_FAILED", error);
+        throw new RepositoryError(
+          `[GalleryRepository] [gallery] [SELECT] [id, title, description, image_url, category, order_index] - ${error.message}`,
+          "FETCH_GALLERY_FAILED",
+          error
+        );
       }
 
       if (!data || data.length === 0) return [];
@@ -70,7 +74,7 @@ const supabaseGalleryRepository: GalleryRepository = {
     } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError(
-        "Galeri öğeleri alınamadı",
+        `[GalleryRepository] [gallery] [SELECT] - Failed to get gallery items`,
         "FETCH_GALLERY_FAILED",
         err
       );
@@ -92,7 +96,11 @@ const supabaseGalleryRepository: GalleryRepository = {
         .limit(12);
 
       if (error) {
-        throw new RepositoryError(error.message, "FETCH_FEATURED_GALLERY_FAILED", error);
+        throw new RepositoryError(
+          `[GalleryRepository] [gallery] [SELECT] [id, title, description, image_url, category, order_index, is_featured] - ${error.message}`,
+          "FETCH_FEATURED_GALLERY_FAILED",
+          error
+        );
       }
 
       if (!data) return [];
@@ -101,7 +109,7 @@ const supabaseGalleryRepository: GalleryRepository = {
     } catch (err: unknown) {
       if (err instanceof RepositoryError) throw err;
       throw new RepositoryError(
-        "Öne çıkan galeri öğeleri alınamadı",
+        `[GalleryRepository] [gallery] [SELECT] - Failed to get featured gallery items`,
         "FETCH_FEATURED_GALLERY_FAILED",
         err
       );

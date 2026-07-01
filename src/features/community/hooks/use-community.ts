@@ -64,26 +64,4 @@ export function useCastVote() {
   });
 }
 
-/**
- * Hook to retrieve community fan wall messages.
- */
-export function useFanMessages() {
-  return useQuery({
-    queryKey: queryKeys.community.messages(),
-    queryFn: () => communityRepository.getFanMessages(),
-  });
-}
 
-/**
- * Hook to add a message to the fan wall.
- */
-export function useAddFanMessage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ username, message }: { username: string; message: string }) =>
-      communityRepository.addFanMessage(username, message),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.community.messages() });
-    },
-  });
-}

@@ -142,18 +142,31 @@ Deno.serve(async (req) => {
     }
 
     // -------------------------------------------------------------------------
-    // 4. Write current stream_state to DB
+    // 4. Write current stream_state to DB (Offline fallbacks)
     // -------------------------------------------------------------------------
+    let offlineCoverUrl: string | null = null;
+    try {
+      const { data: assetData } = await supabase
+        .from("site_assets")
+        .select("offline_cover_url")
+        .maybeSingle();
+      if (assetData) {
+        offlineCoverUrl = assetData.offline_cover_url;
+      }
+    } catch (e) {
+      logger.warn(`Failed to fetch offline_cover_url: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
     const { error: stateError } = await supabase
       .from("stream_state")
       .upsert({
         id: true,
         is_live: streamState.isLive,
-        viewer_count: streamState.viewerCount,
-        current_game: streamState.category || null,
-        stream_title: streamState.title || null,
+        viewer_count: streamState.isLive ? streamState.viewerCount : 0,
+        current_game: streamState.isLive ? (streamState.category || null) : null,
+        stream_title: streamState.isLive ? (streamState.title || null) : null,
         started_at: streamState.isLive ? streamState.startedAt : null,
-        thumbnail_url: streamState.isLive ? streamState.thumbnailUrl : null,
+        thumbnail_url: streamState.isLive ? streamState.thumbnailUrl : (offlineCoverUrl || null),
         stream_url: streamState.isLive ? `https://kick.com/${KICK_CHANNEL_SLUG}` : null,
         last_checked_at: new Date().toISOString(),
       });

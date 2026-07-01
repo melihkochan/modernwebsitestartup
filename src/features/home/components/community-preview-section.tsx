@@ -6,7 +6,7 @@ import { Section } from "@/components/layout/section";
 import { SectionTitle } from "@/components/analytics/section-title";
 import { GlassCard } from "@/components/ui/glass-card";
 import { RevealOnScroll, StaggerChildren } from "@/components/motion";
-import { useSuggestions, useActivePoll, useFanMessages } from "@/features/community/hooks/use-community";
+import { useSuggestions, useActivePoll } from "@/features/community/hooks/use-community";
 
 function CardSkeleton() {
   return (
@@ -22,14 +22,10 @@ function CardSkeleton() {
 export function CommunityPreviewSection() {
   const { data: suggestions, isLoading: loadingSuggestions } = useSuggestions();
   const { data: poll, isLoading: loadingPoll } = useActivePoll();
-  const { data: messages, isLoading: loadingMessages } = useFanMessages();
 
   // Pick the top voted suggestion
   const topSuggestion = suggestions?.sort((a, b) => b.votes - a.votes)[0] ?? null;
   const totalVotes = suggestions?.reduce((sum, s) => sum + s.votes, 0) ?? 0;
-
-  // Show max 3 fan messages in the preview
-  const previewMessages = (messages ?? []).slice(0, 3);
 
   return (
     <Section padding="lg" divided>
@@ -47,7 +43,7 @@ export function CommunityPreviewSection() {
           <StaggerChildren
             staggerDelay={0.12}
             initialDelay={0.1}
-            className="grid grid-cols-1 gap-4 md:grid-cols-3"
+            className="grid grid-cols-1 gap-4 md:grid-cols-2 max-w-4xl mx-auto"
           >
             {/* ── Card 1: Game Suggestion ──────────────────────── */}
             {loadingSuggestions ? (
@@ -174,50 +170,6 @@ export function CommunityPreviewSection() {
               </GlassCard>
             )}
 
-            {/* ── Card 3: Fan Messages ─────────────────────────── */}
-            {loadingMessages ? (
-              <CardSkeleton />
-            ) : (
-              <GlassCard intensity="medium" padding="md" className="flex flex-col gap-4">
-                <div>
-                  <span
-                    className="label-eyebrow"
-                    style={{ fontFamily: "var(--font-inter)", color: "var(--accent-primary)" }}
-                  >
-                    Fan Messages
-                  </span>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <MessageSquare className="h-3.5 w-3.5" style={{ color: "#a1a1aa" }} aria-hidden />
-                    <span className="text-xs" style={{ color: "#a1a1aa" }}>Latest from the community</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {previewMessages.length > 0 ? (
-                    previewMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-overlay)] p-3"
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-xs font-semibold text-[var(--accent-primary)] truncate">
-                            {msg.username}
-                          </span>
-                          <span className="text-[10px] shrink-0" style={{ color: "#a1a1aa" }}>
-                            {msg.time}
-                          </span>
-                        </div>
-                        <p className="text-xs leading-relaxed line-clamp-2" style={{ color: "#d4d4d8" }}>
-                          {msg.message}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm" style={{ color: "#a1a1aa" }}>No messages yet</p>
-                  )}
-                </div>
-              </GlassCard>
-            )}
           </StaggerChildren>
         </div>
       </Container>

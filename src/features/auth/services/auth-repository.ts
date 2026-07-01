@@ -32,12 +32,20 @@ class SupabaseAuthRepository implements AuthRepository {
     const supabase = this.getSupabase();
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw new RepositoryError(error.message, "AUTH_LOGIN_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[AuthRepository] [auth.signInWithPassword] [SIGNIN] [email] - ${error.message}`,
+          "AUTH_LOGIN_FAILED",
+          error
+        );
+      }
       if (!data.user || !data.session) {
-        throw new RepositoryError("Authentication returned incomplete session data", "AUTH_LOGIN_FAILED");
+        throw new RepositoryError(
+          `[AuthRepository] [auth.signInWithPassword] [SIGNIN] - Authentication returned incomplete session data`,
+          "AUTH_LOGIN_FAILED"
+        );
       }
 
-      // Profile Synchronization: Ensure user profile is registered in DB
       const user = data.user;
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -45,21 +53,38 @@ class SupabaseAuthRepository implements AuthRepository {
         .eq("id", user.id)
         .maybeSingle();
 
-      if (!profileError && !profile) {
-        // First login: sync info and insert profile
+      if (profileError) {
+        throw new RepositoryError(
+          `[AuthRepository] [profiles] [SELECT] [id] - ${profileError.message}`,
+          "AUTH_LOGIN_FAILED",
+          profileError
+        );
+      }
+
+      if (!profile) {
         const username = email.split("@")[0] || "user_" + user.id.substring(0, 8);
-        await supabase.from("profiles").insert({
+        const { error: insertError } = await supabase.from("profiles").insert({
           id: user.id,
           username: username,
           avatar_url: `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.id}`,
         });
+        if (insertError) {
+          throw new RepositoryError(
+            `[AuthRepository] [profiles] [INSERT] [id, username, avatar_url] - ${insertError.message}`,
+            "AUTH_LOGIN_FAILED",
+            insertError
+          );
+        }
       }
 
       return { user: data.user, session: data.session };
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      const message = err instanceof Error ? err.message : "Failed to authenticate user credentials";
-      throw new RepositoryError(message, "AUTH_LOGIN_FAILED", err);
+      throw new RepositoryError(
+        `[AuthRepository] [auth.signInWithPassword] [SIGNIN] - Failed to authenticate user credentials`,
+        "AUTH_LOGIN_FAILED",
+        err
+      );
     }
   }
 

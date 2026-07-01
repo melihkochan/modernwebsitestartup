@@ -54,20 +54,6 @@ export const MOCK_STATS = [
   },
 ] as const;
 
-// ---------------------------------------------------------------------------
-// Featured Clip
-// ---------------------------------------------------------------------------
-
-export const MOCK_CLIP = {
-  title: "18 Kill Ace Round in Ranked — Pure Insanity",
-  game: "Valorant",
-  views: 284_000,
-  date: "2 weeks ago",
-  duration: "1:47",
-  likes: 14_200,
-} as const;
-
-// ---------------------------------------------------------------------------
 // Community
 // ---------------------------------------------------------------------------
 
@@ -90,26 +76,7 @@ export const MOCK_ACTIVE_POLL = {
   endsIn: "2 days",
 } as const;
 
-export const MOCK_FAN_MESSAGES = [
-  {
-    id: "1",
-    username: "PurpleKnight99",
-    message: "Best Valorant player on Kick, no debate. Love the streams!",
-    time: "12m ago",
-  },
-  {
-    id: "2",
-    username: "ayz_tv",
-    message: "The community here is honestly so wholesome. Been here since 5K.",
-    time: "28m ago",
-  },
-  {
-    id: "3",
-    username: "StreamerFan_TR",
-    message: "That clip last night was absolutely insane. Clip of the year fr.",
-    time: "1h ago",
-  },
-] as const;
+
 
 // ---------------------------------------------------------------------------
 // Timeline
@@ -145,7 +112,7 @@ export const MOCK_TIMELINE = [
     year: "2024",
     title: "100K Milestone",
     description:
-      "Hit 100,000 followers live on stream. The celebration lasted six hours and became the most-clipped moment of the year.",
+      "Hit 100,000 followers live on stream. The celebration lasted six hours and became the most celebrated moment of the year.",
     highlight: true,
   },
   {
@@ -254,13 +221,13 @@ export const MOCK_FAQ_ITEMS = [
     id: "faq-3",
     question: "Is there a community Discord server?",
     answer:
-      "Yes — the ZehrArmy Discord is home to over 40,000 members. You'll find stream alerts, clip channels, game-looking-for-group channels, and a direct line to the moderator team.",
+      "Yes — the ZehrArmy Discord is home to over 40,000 members. You'll find stream alerts, highlight channels, game-looking-for-group channels, and a direct line to the moderator team.",
   },
   {
     id: "faq-4",
     question: "How can I support the channel?",
     answer:
-      "The best support is simply being present in streams and sharing clips you enjoy. Kick subscriptions and channel points are also available. Every subscription directly supports the content quality and stream hours.",
+      "The best support is simply being present in streams and sharing highlights you enjoy. Kick subscriptions and channel points are also available. Every subscription directly supports the content quality and stream hours.",
   },
   {
     id: "faq-5",

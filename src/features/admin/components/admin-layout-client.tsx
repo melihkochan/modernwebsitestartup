@@ -15,7 +15,6 @@ import {
   X,
   LogOut,
   Images,
-  Film,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -31,7 +30,6 @@ interface AdminSidebarItem {
 const SIDEBAR_ITEMS: AdminSidebarItem[] = [
   { label: "Genel Bakış", href: "/admin", icon: LayoutDashboard },
   { label: "Canlı Yayın", href: "/admin/live", icon: Sliders },
-  { label: "Klipler", href: "/admin/clips", icon: Film },
   { label: "Yayın Geçmişi", href: "/admin/schedule", icon: Calendar },
   { label: "Topluluk Oyun Önerileri", href: "/admin/suggestions", icon: ThumbsUp },
   { label: "Medya Kütüphanesi", href: "/admin/media", icon: Images },

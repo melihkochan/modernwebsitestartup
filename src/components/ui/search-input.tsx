@@ -14,7 +14,7 @@ export interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElem
  *
  * @example
  * <SearchInput
- *   placeholder="Search clips..."
+ *   placeholder="Search items..."
  *   value={query}
  *   onChange={(e) => setQuery(e.target.value)}
  *   onClear={() => setQuery("")}

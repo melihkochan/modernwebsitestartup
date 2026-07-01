@@ -5,7 +5,6 @@ import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "@/features/home/components/hero-section";
 import { LivePreviewSection } from "@/features/home/components/live-preview-section";
 import { AnalyticsPreviewSection } from "@/features/home/components/analytics-preview-section";
-import { FeaturedClipSection } from "@/features/home/components/featured-clip-section";
 import { CommunityPreviewSection } from "@/features/home/components/community-preview-section";
 import { TimelinePreviewSection } from "@/features/home/components/timeline-preview-section";
 import { SetupPreviewSection } from "@/features/home/components/setup-preview-section";
@@ -45,9 +44,6 @@ export default function HomePage() {
 
         {/* 3. Analytics */}
         <AnalyticsPreviewSection />
-
-        {/* 4. Featured Clip */}
-        <FeaturedClipSection />
 
         {/* 5. Community */}
         <CommunityPreviewSection />

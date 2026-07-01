@@ -10,7 +10,8 @@ export function useStreamInfo() {
   return useQuery({
     queryKey: queryKeys.live.streamInfo(),
     queryFn: () => liveRepository.getStreamInfo(),
-    refetchInterval: 15000,
+    refetchInterval: 30000,
+    staleTime: 0, // Always consider stale to guarantee freshness
   });
 }
 

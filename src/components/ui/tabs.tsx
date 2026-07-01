@@ -53,10 +53,10 @@ interface TabContentProps {
  * <Tabs defaultTab="overview">
  *   <TabList>
  *     <TabTrigger value="overview">Overview</TabTrigger>
- *     <TabTrigger value="clips">Clips</TabTrigger>
+ *     <TabTrigger value="settings">Settings</TabTrigger>
  *   </TabList>
  *   <TabContent value="overview">...</TabContent>
- *   <TabContent value="clips">...</TabContent>
+ *   <TabContent value="settings">...</TabContent>
  * </Tabs>
  */
 export function Tabs({ defaultTab, children, className, onChange }: TabsProps) {

@@ -8,7 +8,7 @@
 export const siteConfig = {
   name: "Zehragn",
   description:
-    "The official home of streamer Zehragn — live status, community, clips, game suggestions, and more.",
+    "The official home of streamer Zehragn — live status, community, analytics, game suggestions, and more.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://zehragn.com",
   kick: {
     channelSlug: process.env.KICK_CHANNEL_SLUG ?? "zehragn",
@@ -27,7 +27,6 @@ export const siteConfig = {
     { label: "Live", href: "/live" },
     { label: "Analytics", href: "/analytics" },
     { label: "Community", href: "/community" },
-    { label: "Clips", href: "/clips" },
     { label: "Gallery", href: "/gallery" },
     { label: "Timeline", href: "/timeline" },
     { label: "Setup", href: "/setup" },

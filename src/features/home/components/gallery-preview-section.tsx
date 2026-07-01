@@ -9,6 +9,7 @@ import { SectionTitle } from "@/components/analytics/section-title";
 import { RevealOnScroll } from "@/components/motion";
 import { useFeaturedGalleryItems } from "@/features/gallery/hooks/use-gallery";
 import { Play } from "lucide-react";
+import { PlaceholderImage } from "@/components/ui/placeholder-image";
 
 function GallerySkeleton() {
   return (
@@ -87,7 +88,7 @@ export function GalleryPreviewSection() {
                               </div>
                             </div>
                           </div>
-                        ) : (
+                        ) : (displayUrl && displayUrl.trim() !== "") ? (
                           <Image
                             src={displayUrl}
                             alt={item.altText ?? item.title}
@@ -97,6 +98,8 @@ export function GalleryPreviewSection() {
                             loading="lazy"
                             unoptimized={process.env.NODE_ENV === "development"}
                           />
+                        ) : (
+                          <PlaceholderImage alt={item.title} />
                         )}
 
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-end p-3 z-10">

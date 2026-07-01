@@ -170,7 +170,7 @@ export function HeroSection() {
             className="mt-4 max-w-lg text-sm sm:text-base leading-relaxed"
             style={{ fontFamily: "var(--font-inter)", color: "#e4e4e7" }}
           >
-            Live stats, community, clips, and everything else — in one cinematic experience.
+            Live stats, analytics, community and everything else — in one cinematic experience.
           </p>
         </SlideUp>
 

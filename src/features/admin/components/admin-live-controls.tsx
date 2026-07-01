@@ -6,23 +6,14 @@ import { Users, MessageSquare, Tv, Clock, RefreshCw, Info } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useCreatorStats, useTriggerCreatorSync } from "../hooks/use-admin";
+import { useCreatorStats } from "../hooks/use-admin";
 
 export function AdminLiveControls() {
   const { data: stats, isLoading } = useCreatorStats();
-  const { mutate: triggerSync } = useTriggerCreatorSync();
   const isLive = stats?.isLive ?? false;
   const viewerCount = stats?.viewerCount ?? 0;
 
   const [uptime, setUptime] = useState<string>("00:00:00");
-
-  useEffect(() => {
-    triggerSync();
-    const interval = setInterval(() => {
-      triggerSync();
-    }, 60000);
-    return () => clearInterval(interval);
-  }, [triggerSync]);
 
   useEffect(() => {
     if (!isLive || !stats?.startedAt) {

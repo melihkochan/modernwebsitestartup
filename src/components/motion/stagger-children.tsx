@@ -20,7 +20,7 @@ interface StaggerChildrenProps extends Omit<HTMLMotionProps<"div">, "initial" | 
  *
  * @example
  * <StaggerChildren staggerDelay={0.08}>
- *   {clips.map(clip => <ClipCard key={clip.id} {...clip} />)}
+ *   {items.map(item => <Card key={item.id} {...item} />)}
  * </StaggerChildren>
  */
 export function StaggerChildren({

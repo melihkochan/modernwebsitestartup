@@ -2,9 +2,9 @@ import { z } from "zod";
 
 export const metricSchema = z.object({
   label: z.string(),
-  value: z.number().nonnegative(),
-  change: z.string(),
-  isPositive: z.boolean(),
+  value: z.number().nonnegative().nullable(),
+  change: z.string().nullable().optional(),
+  isPositive: z.boolean().nullable().optional(),
   textColor: z.string().optional(),
   glowColor: z.string().optional(),
 });

@@ -2,10 +2,6 @@ import { createClient } from "@/lib/supabase/client";
 import { RepositoryError } from "@/lib/errors";
 import { fetchSteamGameDetails } from "@/lib/steam/steam-api";
 
-// ---------------------------------------------------------------------------
-// Interface Definitions
-// ---------------------------------------------------------------------------
-
 export interface CreatorSyncStatus {
   status: "success" | "failed" | "syncing" | "idle";
   last_success_at: string | null;
@@ -85,11 +81,7 @@ export interface AdminRepository {
   getCreatorStats(): Promise<CreatorStats>;
 }
 
-// ---------------------------------------------------------------------------
-// Supabase Implementation (single implementation — no mock fallback)
-// ---------------------------------------------------------------------------
-
-const supabaseAdminRepository: AdminRepository = {
+export const adminRepository: AdminRepository = {
   async getSuggestions(): Promise<AdminSuggestion[]> {
     const supabase = createClient();
     try {
@@ -103,7 +95,13 @@ const supabaseAdminRepository: AdminRepository = {
         `)
         .order("votes_count", { ascending: false });
 
-      if (error) throw new RepositoryError(error.message, "FETCH_SUGGESTIONS_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[AdminRepository] [game_suggestions] [SELECT] [id, game_title, votes_count, suggested_by, admin_note, status, steam_appid, platform, cover_image_url] - ${error.message}`,
+          "FETCH_SUGGESTIONS_FAILED",
+          error
+        );
+      }
       if (!data) return [];
 
       const suggestions = await Promise.all(
@@ -143,7 +141,11 @@ const supabaseAdminRepository: AdminRepository = {
       return suggestions;
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Oyun önerileri alınamadı", "FETCH_SUGGESTIONS_FAILED", err);
+      throw new RepositoryError(
+        `[AdminRepository] [game_suggestions] [SELECT] - Failed to load admin suggestions`,
+        "FETCH_SUGGESTIONS_FAILED",
+        err
+      );
     }
   },
 
@@ -154,10 +156,20 @@ const supabaseAdminRepository: AdminRepository = {
         .from("game_suggestions")
         .update({ status: "approved" })
         .eq("id", id);
-      if (error) throw new RepositoryError(error.message, "APPROVE_SUGGESTION_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[AdminRepository] [game_suggestions] [UPDATE] [status:approved] [id:${id}] - ${error.message}`,
+          "APPROVE_SUGGESTION_FAILED",
+          error
+        );
+      }
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Öneri onaylanamadı", "APPROVE_SUGGESTION_FAILED", err);
+      throw new RepositoryError(
+        `[AdminRepository] [game_suggestions] [UPDATE] - Failed to approve game suggestion`,
+        "APPROVE_SUGGESTION_FAILED",
+        err
+      );
     }
   },
 
@@ -168,10 +180,20 @@ const supabaseAdminRepository: AdminRepository = {
         .from("game_suggestions")
         .delete()
         .eq("id", id);
-      if (error) throw new RepositoryError(error.message, "DELETE_SUGGESTION_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[AdminRepository] [game_suggestions] [DELETE] [id:${id}] - ${error.message}`,
+          "DELETE_SUGGESTION_FAILED",
+          error
+        );
+      }
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Öneri silinemedi", "DELETE_SUGGESTION_FAILED", err);
+      throw new RepositoryError(
+        `[AdminRepository] [game_suggestions] [DELETE] - Failed to delete game suggestion`,
+        "DELETE_SUGGESTION_FAILED",
+        err
+      );
     }
   },
 
@@ -183,9 +205,14 @@ const supabaseAdminRepository: AdminRepository = {
         .select("*")
         .order("started_at", { ascending: false });
 
-      if (error) throw new RepositoryError(error.message, "FETCH_STREAM_HISTORY_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[AdminRepository] [stream_history] [SELECT] [*] - ${error.message}`,
+          "FETCH_STREAM_HISTORY_FAILED",
+          error
+        );
+      }
 
-      // Return empty array if no data — the UI will show a proper empty state
       if (!data || data.length === 0) return [];
 
       return data.map((d) => {
@@ -205,7 +232,11 @@ const supabaseAdminRepository: AdminRepository = {
       });
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Yayın geçmişi alınamadı", "FETCH_STREAM_HISTORY_FAILED", err);
+      throw new RepositoryError(
+        `[AdminRepository] [stream_history] [SELECT] - Failed to retrieve stream history`,
+        "FETCH_STREAM_HISTORY_FAILED",
+        err
+      );
     }
   },
 
@@ -217,12 +248,23 @@ const supabaseAdminRepository: AdminRepository = {
         .select("value")
         .eq("key", "kick_sync_status")
         .maybeSingle();
-      if (error) throw new RepositoryError(error.message, "FETCH_SYNC_STATUS_FAILED", error);
+
+      if (error) {
+        throw new RepositoryError(
+          `[AdminRepository] [settings] [SELECT] [value] [key:kick_sync_status] - ${error.message}`,
+          "FETCH_SYNC_STATUS_FAILED",
+          error
+        );
+      }
       if (!data) return null;
       return data.value as unknown as CreatorSyncStatus;
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Senkronizasyon durumu alınamadı", "FETCH_SYNC_STATUS_FAILED", err);
+      throw new RepositoryError(
+        `[AdminRepository] [settings] [SELECT] - Failed to retrieve sync status metadata`,
+        "FETCH_SYNC_STATUS_FAILED",
+        err
+      );
     }
   },
 
@@ -230,42 +272,70 @@ const supabaseAdminRepository: AdminRepository = {
     const supabase = createClient();
     try {
       const { error } = await supabase.functions.invoke("kick-sync", { method: "POST" });
-      if (error) throw new RepositoryError(error.message, "TRIGGER_SYNC_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[AdminRepository] [functions.invoke:kick-sync] [POST] - ${error.message}`,
+          "TRIGGER_SYNC_FAILED",
+          error
+        );
+      }
       return this.getSyncStatus();
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Senkronizasyon tetiklenemedi", "TRIGGER_SYNC_FAILED", err);
+      throw new RepositoryError(
+        `[AdminRepository] [functions.invoke] - Failed to trigger Kick sync function`,
+        "TRIGGER_SYNC_FAILED",
+        err
+      );
     }
   },
 
   async getCreatorStats(): Promise<CreatorStats> {
     const supabase = createClient();
     try {
-      // Read current live state
-      const { data: streamState } = await supabase
+      const { data: streamState, error: stateError } = await supabase
         .from("stream_state")
         .select("*")
         .maybeSingle();
 
-      // Read latest subscriber count (official Kick metric)
-      const { data: subData } = await supabase
+      if (stateError) {
+        throw new RepositoryError(
+          `[AdminRepository] [stream_state] [SELECT] [*] - ${stateError.message}`,
+          "FETCH_CREATOR_STATS_FAILED",
+          stateError
+        );
+      }
+
+      const { data: subData, error: subError } = await supabase
         .from("subscriber_history")
         .select("active_count")
         .order("timestamp", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      // Read stream history for aggregate calculations
-      const { data: history } = await supabase
+      if (subError) {
+        throw new RepositoryError(
+          `[AdminRepository] [subscriber_history] [SELECT] [active_count] - ${subError.message}`,
+          "FETCH_CREATOR_STATS_FAILED",
+          subError
+        );
+      }
+
+      const { data: history, error: historyError } = await supabase
         .from("stream_history")
         .select("peak_viewers, average_viewers, title, game_played, started_at, ended_at")
         .order("started_at", { ascending: false });
 
-      // Sync status
+      if (historyError) {
+        throw new RepositoryError(
+          `[AdminRepository] [stream_history] [SELECT] [peak_viewers, average_viewers, title] - ${historyError.message}`,
+          "FETCH_CREATOR_STATS_FAILED",
+          historyError
+        );
+      }
+
       const syncStatus = await this.getSyncStatus();
 
-      // Aggregate peak and average viewers from real stream_history
-      // If no history exists, these are null (not 0, not fake numbers)
       let peakViewers: number | null = null;
       let averageViewers: number | null = null;
       let recentStream: CreatorStats["recentStream"] = null;
@@ -309,30 +379,13 @@ const supabaseAdminRepository: AdminRepository = {
         lastSync: syncStatus,
         recentStream,
       };
-    } catch {
-      return {
-        isLive: false,
-        currentGame: "Kategori bilgisi alınamadı.",
-        streamTitle: "Güncel yayın bulunmuyor.",
-        startedAt: null,
-        viewerCount: 0,
-        thumbnailUrl: null,
-        streamUrl: null,
-        lastCheckedAt: null,
-        totalFollowers: null,
-        totalSubscribers: null,
-        peakViewers: null,
-        averageViewers: null,
-        totalStreams: 0,
-        lastSync: null,
-        recentStream: null,
-      };
+    } catch (err) {
+      if (err instanceof RepositoryError) throw err;
+      throw new RepositoryError(
+        `[AdminRepository] [stream_state] [SELECT] - Failed to load creator dashboard statistics`,
+        "FETCH_CREATOR_STATS_FAILED",
+        err
+      );
     }
   },
 };
-
-// ---------------------------------------------------------------------------
-// Export
-// ---------------------------------------------------------------------------
-
-export const adminRepository: AdminRepository = supabaseAdminRepository;

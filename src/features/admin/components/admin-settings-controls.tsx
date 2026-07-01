@@ -79,7 +79,23 @@ export function AdminSettingsControls() {
     }
   };
 
-  const handleSelectMedia = (url: string) => {
+  const handleOpenPicker = (targetKey: string) => {
+    setPickerTarget(targetKey);
+    if (targetKey === "avatarUrl") {
+      setPickerBucket("avatars");
+    } else {
+      setPickerBucket("gallery");
+    }
+    setIsMediaPickerOpen(true);
+  };
+
+  const handleSelectMedia = (file: any) => {
+    if (!file.mimeType.startsWith("image/")) {
+      alert("Hata: Sadece resim dosyaları site varlığı olarak seçilebilir!");
+      return;
+    }
+
+    const url = file.publicUrl;
     if (pickerTarget === "avatarUrl") setAvatarUrl(url);
     if (pickerTarget === "whiteLogoUrl") setWhiteLogoUrl(url);
     if (pickerTarget === "darkLogoUrl") setDarkLogoUrl(url);
@@ -90,9 +106,35 @@ export function AdminSettingsControls() {
     setPickerTarget(null);
   };
 
-  const filteredMedia = (mediaFiles ?? []).filter((f) =>
-    f.name.toLowerCase().includes(mediaSearch.toLowerCase())
-  );
+  const filteredMedia = (mediaFiles ?? []).filter((f) => {
+    if (mediaSearch && !f.name.toLowerCase().includes(mediaSearch.toLowerCase())) {
+      return false;
+    }
+    if (!f.mimeType.startsWith("image/")) {
+      return false;
+    }
+    if (pickerTarget === "avatarUrl") {
+      return f.bucket === "avatars" || f.name.toLowerCase().includes("avatar");
+    }
+    if (pickerTarget === "whiteLogoUrl" || pickerTarget === "darkLogoUrl") {
+      return f.name.toLowerCase().includes("logo");
+    }
+    if (pickerTarget === "offlineCoverUrl" || pickerTarget === "defaultThumbnailUrl") {
+      return (
+        f.name.toLowerCase().includes("cover") ||
+        f.name.toLowerCase().includes("banner") ||
+        f.name.toLowerCase().includes("thumbnail")
+      );
+    }
+    if (pickerTarget === "illustration404Url") {
+      return (
+        f.name.toLowerCase().includes("404") ||
+        f.name.toLowerCase().includes("illustration") ||
+        f.name.toLowerCase().includes("error")
+      );
+    }
+    return true;
+  });
 
   const assetFields = [
     { key: "avatarUrl", label: "Yayıncı Avatarı (Avatar)", val: avatarUrl, set: setAvatarUrl },
@@ -275,7 +317,7 @@ export function AdminSettingsControls() {
                     />
                     <Button
                       type="button"
-                      onClick={() => { setPickerTarget(field.key); setIsMediaPickerOpen(true); }}
+                      onClick={() => handleOpenPicker(field.key)}
                       className="h-9 px-3 text-xs bg-zinc-800 border-none hover:bg-zinc-700 text-white cursor-pointer"
                     >
                       Seç
@@ -292,7 +334,7 @@ export function AdminSettingsControls() {
                   </div>
                 </div>
 
-                {field.val && (
+                {field.val && field.val.trim() !== "" && (
                   <div className="relative w-full h-24 mt-3 rounded-lg overflow-hidden border border-[var(--border-default)] bg-black">
                     <Image
                       src={field.val}
@@ -369,7 +411,7 @@ export function AdminSettingsControls() {
                 filteredMedia.map((file) => (
                   <div
                     key={file.path}
-                    onClick={() => handleSelectMedia(file.publicUrl)}
+                    onClick={() => handleSelectMedia(file)}
                     className="group relative aspect-video bg-zinc-950 border border-[var(--border-default)] hover:border-[var(--accent-primary)] rounded-lg overflow-hidden cursor-pointer transition-all flex items-center justify-center"
                   >
                     <Image

@@ -276,7 +276,8 @@ export type Database = {
           thumbnail_url: string
           title: string
           updated_at: string
-          video_url: string
+          video_url: string | null
+          kick_url: string | null
           view_count: number | null
           description: string | null
           category: string | null
@@ -296,7 +297,8 @@ export type Database = {
           thumbnail_url: string
           title: string
           updated_at?: string
-          video_url: string
+          video_url?: string | null
+          kick_url?: string | null
           view_count?: number | null
           description?: string | null
           category?: string | null
@@ -316,7 +318,8 @@ export type Database = {
           thumbnail_url?: string
           title?: string
           updated_at?: string
-          video_url?: string
+          video_url?: string | null
+          kick_url?: string | null
           view_count?: number | null
           description?: string | null
           category?: string | null
@@ -1122,27 +1125,6 @@ export type Database = {
           white_logo_url?: string | null
           dark_logo_url?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      fan_messages: {
-        Row: {
-          id: string
-          username: string
-          message: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          username: string
-          message: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          username?: string
-          message?: string
-          created_at?: string
         }
         Relationships: []
       }

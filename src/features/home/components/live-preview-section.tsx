@@ -41,7 +41,7 @@ export function LivePreviewSection() {
                 className="relative w-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-subtle)]"
                 style={{ aspectRatio: "16 / 9" }}
               >
-                {imageUrl ? (
+                {imageUrl && imageUrl.trim() !== "" ? (
                   <Image
                     src={imageUrl}
                     alt={streamTitle}

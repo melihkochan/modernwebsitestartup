@@ -1,4 +1,3 @@
-import { USE_MOCK_DATA } from "@/config/data-source";
 import { createClient } from "@/lib/supabase/client";
 import { RepositoryError } from "@/lib/errors";
 import type { FaqItem } from "../validators/faq-schemas";
@@ -7,11 +6,7 @@ export interface FaqRepository {
   getFAQItems(category: string): Promise<FaqItem[]>;
 }
 
-// ---------------------------------------------------------------------------
-// Mock Implementation
-// ---------------------------------------------------------------------------
-
-const MOCK_FAQS: FaqItem[] = [
+const STATIC_FAQS: FaqItem[] = [
   {
     id: "faq-g1",
     category: "general",
@@ -62,49 +57,43 @@ const MOCK_FAQS: FaqItem[] = [
   },
 ];
 
-const mockFaqRepository: FaqRepository = {
-  async getFAQItems(category) {
-    if (category === "all") return MOCK_FAQS;
-    return MOCK_FAQS.filter((faq) => faq.category === category);
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Supabase Implementation
-// ---------------------------------------------------------------------------
-
-const supabaseFaqRepository: FaqRepository = {
-  async getFAQItems(category): Promise<FaqItem[]> {
+export const faqRepository: FaqRepository = {
+  async getFAQItems(category: string): Promise<FaqItem[]> {
     const supabase = createClient();
     try {
       const { data, error } = await supabase
         .from("faq")
-        .select("*")
+        .select("id, category, question, answer")
         .order("order_weight", { ascending: true });
 
-      if (error) throw new RepositoryError(error.message, "FETCH_FAQ_FAILED", error);
-      if (!data || data.length === 0) return mockFaqRepository.getFAQItems(category);
+      if (error) {
+        throw new RepositoryError(
+          `[FaqRepository] [faq] [SELECT] [id, category, question, answer] - ${error.message}`,
+          "FETCH_FAQ_FAILED",
+          error
+        );
+      }
 
-      const items = data.map((d) => ({
-        id: d.id,
-        category: d.category as FaqItem["category"],
-        question: d.question,
-        answer: d.answer,
-      }));
+      const items = (data && data.length > 0)
+        ? data.map((d) => ({
+            id: d.id,
+            category: (d.category || "general") as FaqItem["category"],
+            question: d.question || "",
+            answer: d.answer || "",
+          }))
+        : STATIC_FAQS;
 
-      if (category === "all") return items;
+      if (category === "all") {
+        return items;
+      }
       return items.filter((faq) => faq.category === category);
-    } catch (err: unknown) {
+    } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch FAQ items", "FETCH_FAQ_FAILED", err);
+      throw new RepositoryError(
+        `[FaqRepository] [faq] [SELECT] - Failed to fetch FAQ items`,
+        "FETCH_FAQ_FAILED",
+        err
+      );
     }
   },
 };
-
-// ---------------------------------------------------------------------------
-// Unified Export Selector
-// ---------------------------------------------------------------------------
-
-export const faqRepository: FaqRepository = USE_MOCK_DATA
-  ? mockFaqRepository
-  : supabaseFaqRepository;

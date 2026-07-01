@@ -1,130 +1,16 @@
-import { USE_MOCK_DATA } from "@/config/data-source";
 import { createClient } from "@/lib/supabase/client";
 import { RepositoryError } from "@/lib/errors";
-import type { GameSuggestion, Poll, FanMessage } from "../validators/community-schemas";
+import type { GameSuggestion, Poll } from "../validators/community-schemas";
 
 export interface CommunityRepository {
   getSuggestions(): Promise<GameSuggestion[]>;
   suggestGame(game: Omit<GameSuggestion, "id" | "votes" | "isUpvoted">): Promise<GameSuggestion>;
   upvoteSuggestion(id: string): Promise<void>;
-  getActivePoll(): Promise<Poll>;
-  castVote(pollId: string, optionId: string): Promise<Poll>;
-  getFanMessages(): Promise<FanMessage[]>;
-  addFanMessage(username: string, message: string): Promise<FanMessage>;
+  getActivePoll(): Promise<Poll | null>;
+  castVote(pollId: string, optionId: string): Promise<Poll | null>;
 }
 
-// ---------------------------------------------------------------------------
-// Mock Implementation (In-memory state for local testing)
-// ---------------------------------------------------------------------------
-
-let mockSuggestions: GameSuggestion[] = [
-  {
-    id: "s-1",
-    game: "Elden Ring: Shadow of the Erdtree",
-    votes: 2420,
-    submittedBy: "EldenLord",
-    platform: "PC / Console",
-    description: "Play the new DLC blind! High death count guaranteed.",
-    isUpvoted: false,
-  },
-  {
-    id: "s-2",
-    game: "Hollow Knight: Silksong",
-    votes: 1982,
-    submittedBy: "ClownClown",
-    platform: "PC / Console",
-    description: "If it releases during our lifetime, please stream it.",
-    isUpvoted: false,
-  },
-  {
-    id: "s-3",
-    game: "Resident Evil 4 Remake",
-    votes: 1450,
-    submittedBy: "LeonS",
-    platform: "Console",
-    description: "Professional difficulty run with no HUD would be epic.",
-    isUpvoted: false,
-  },
-];
-
-let mockPoll: Poll = {
-  id: "p-active",
-  question: "What game should we play for variety slot this week?",
-  options: [
-    { id: "p-1", label: "Valorant Custom Viewer Games", votes: 1842 },
-    { id: "p-2", label: "Horror Night (Outlast 2)", votes: 891 },
-    { id: "p-3", label: "Indie Games Variety Stream", votes: 447 },
-  ],
-  totalVotes: 3180,
-  endsIn: "2 days",
-};
-
-let mockMessages: FanMessage[] = [
-  { id: "m-1", username: "PurpleKnight99", message: "Best Valorant player on Kick, no debate. Love the streams!", time: "12m ago" },
-  { id: "m-2", username: "ayz_tv", message: "The community here is honestly so wholesome. Been here since 5K.", time: "28m ago" },
-  { id: "m-3", username: "StreamerFan_TR", message: "That clutch last night was absolutely insane. Clip of the year fr.", time: "1h ago" },
-];
-
-const mockCommunityRepository: CommunityRepository = {
-  async getSuggestions() { return mockSuggestions; },
-
-  async suggestGame(game) {
-    const newSug: GameSuggestion = {
-      ...game,
-      id: `s-${Date.now()}`,
-      votes: 1,
-      isUpvoted: true,
-    };
-    mockSuggestions = [newSug, ...mockSuggestions];
-    return newSug;
-  },
-
-  async upvoteSuggestion(id) {
-    mockSuggestions = mockSuggestions.map((s) => {
-      if (s.id === id) {
-        const nextUpvoted = !s.isUpvoted;
-        return {
-          ...s,
-          votes: nextUpvoted ? s.votes + 1 : s.votes - 1,
-          isUpvoted: nextUpvoted,
-        };
-      }
-      return s;
-    });
-  },
-
-  async getActivePoll() { return mockPoll; },
-
-  async castVote(pollId, optionId) {
-    mockPoll = {
-      ...mockPoll,
-      options: mockPoll.options.map((opt) =>
-        opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
-      ),
-      totalVotes: mockPoll.totalVotes + 1,
-    };
-    return mockPoll;
-  },
-
-  async getFanMessages() { return mockMessages; },
-
-  async addFanMessage(username, message) {
-    const newMsg: FanMessage = {
-      id: `msg-${Date.now()}`,
-      username,
-      message,
-      time: "Just now",
-    };
-    mockMessages = [newMsg, ...mockMessages];
-    return newMsg;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Supabase Implementation
-// ---------------------------------------------------------------------------
-
-const supabaseCommunityRepository: CommunityRepository = {
+export const communityRepository: CommunityRepository = {
   async getSuggestions(): Promise<GameSuggestion[]> {
     const supabase = createClient();
     try {
@@ -138,24 +24,33 @@ const supabaseCommunityRepository: CommunityRepository = {
         `)
         .order("votes_count", { ascending: false });
 
-      if (error) throw new RepositoryError(error.message, "FETCH_SUGGESTIONS_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[CommunityRepository] [game_suggestions] [SELECT] [votes_count, game_title] - ${error.message}`,
+          "FETCH_SUGGESTIONS_FAILED",
+          error
+        );
+      }
       if (!data) return [];
 
       return data.map((d) => ({
         id: d.id,
-        game: d.game_title,
-        votes: d.votes_count,
+        game: d.game_title || "",
+        votes: d.votes_count ?? 0,
         submittedBy: (d as any).profiles?.username || "Anonim",
         platform: d.platform || "PC",
         description: d.admin_note || "",
         isUpvoted: false,
         steamAppId: d.steam_appid,
-        coverImageUrl: d.cover_image_url,
+        coverImageUrl: d.cover_image_url || "",
       }));
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      const message = err instanceof Error ? err.message : "Failed to fetch suggestions";
-      throw new RepositoryError(message, "FETCH_SUGGESTIONS_FAILED", err);
+      throw new RepositoryError(
+        `[CommunityRepository] [game_suggestions] [SELECT] - Failed to fetch suggestions`,
+        "FETCH_SUGGESTIONS_FAILED",
+        err
+      );
     }
   },
 
@@ -182,24 +77,38 @@ const supabaseCommunityRepository: CommunityRepository = {
         `)
         .single();
 
-      if (error) throw new RepositoryError(error.message, "SUGGEST_GAME_FAILED", error);
-      if (!data) throw new RepositoryError("No data returned from insert", "SUGGEST_GAME_FAILED");
+      if (error) {
+        throw new RepositoryError(
+          `[CommunityRepository] [game_suggestions] [INSERT] [game_title, suggested_by] - ${error.message}`,
+          "SUGGEST_GAME_FAILED",
+          error
+        );
+      }
+      if (!data) {
+        throw new RepositoryError(
+          `[CommunityRepository] [game_suggestions] [INSERT] - No data returned from insert`,
+          "SUGGEST_GAME_FAILED"
+        );
+      }
 
       return {
         id: data.id,
-        game: data.game_title,
-        votes: data.votes_count,
+        game: data.game_title || "",
+        votes: data.votes_count ?? 1,
         submittedBy: (data as any).profiles?.username || "Anonim",
         platform: data.platform || "PC",
         description: data.admin_note || "",
         isUpvoted: true,
         steamAppId: data.steam_appid,
-        coverImageUrl: data.cover_image_url,
+        coverImageUrl: data.cover_image_url || "",
       };
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      const message = err instanceof Error ? err.message : "Failed to submit game suggestion";
-      throw new RepositoryError(message, "SUGGEST_GAME_FAILED", err);
+      throw new RepositoryError(
+        `[CommunityRepository] [game_suggestions] [INSERT] - Failed to submit game suggestion`,
+        "SUGGEST_GAME_FAILED",
+        err
+      );
     }
   },
 
@@ -208,16 +117,23 @@ const supabaseCommunityRepository: CommunityRepository = {
     try {
       const { error } = await supabase.rpc("increment_suggestion_votes", { suggestion_id: id });
       if (error) {
-        throw new RepositoryError(error.message, "UPVOTE_FAILED", error);
+        throw new RepositoryError(
+          `[CommunityRepository] [game_suggestions] [RPC:increment_suggestion_votes] [suggestion_id] - ${error.message}`,
+          "UPVOTE_FAILED",
+          error
+        );
       }
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      const message = err instanceof Error ? err.message : "Failed to cast upvote";
-      throw new RepositoryError(message, "UPVOTE_FAILED", err);
+      throw new RepositoryError(
+        `[CommunityRepository] [game_suggestions] [RPC] - Failed to cast upvote`,
+        "UPVOTE_FAILED",
+        err
+      );
     }
   },
 
-  async getActivePoll(): Promise<Poll> {
+  async getActivePoll(): Promise<Poll | null> {
     const supabase = createClient();
     try {
       const { data, error } = await supabase
@@ -226,8 +142,14 @@ const supabaseCommunityRepository: CommunityRepository = {
         .eq("is_active", true)
         .maybeSingle();
 
-      if (error) throw new RepositoryError(error.message, "FETCH_POLL_FAILED", error);
-      if (!data) return mockPoll;
+      if (error) {
+        throw new RepositoryError(
+          `[CommunityRepository] [polls] [SELECT] [is_active] - ${error.message}`,
+          "FETCH_POLL_FAILED",
+          error
+        );
+      }
+      if (!data) return null;
 
       const rawOptions = (data.options as unknown as Array<{ id: string; label: string; votes?: number }>) || [];
       const options = rawOptions.map((opt) => ({
@@ -240,19 +162,22 @@ const supabaseCommunityRepository: CommunityRepository = {
 
       return {
         id: data.id,
-        question: data.question,
+        question: data.question || "",
         options,
         totalVotes,
         endsIn: data.expires_at ? "Active" : "Closed",
       };
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      const message = err instanceof Error ? err.message : "Failed to fetch active poll";
-      throw new RepositoryError(message, "FETCH_POLL_FAILED", err);
+      throw new RepositoryError(
+        `[CommunityRepository] [polls] [SELECT] - Failed to fetch active poll`,
+        "FETCH_POLL_FAILED",
+        err
+      );
     }
   },
 
-  async castVote(pollId: string, optionId: string): Promise<Poll> {
+  async castVote(pollId: string, optionId: string): Promise<Poll | null> {
     const supabase = createClient();
     try {
       let fingerprint = typeof window !== "undefined" ? localStorage.getItem("vote_fingerprint") : null;
@@ -269,69 +194,21 @@ const supabaseCommunityRepository: CommunityRepository = {
         fingerprint: fingerprint,
       });
 
-      if (error) throw new RepositoryError(error.message, "CAST_VOTE_FAILED", error);
+      if (error) {
+        throw new RepositoryError(
+          `[CommunityRepository] [polls] [RPC:cast_poll_vote] [poll_id, option_id] - ${error.message}`,
+          "CAST_VOTE_FAILED",
+          error
+        );
+      }
       return this.getActivePoll();
     } catch (err) {
       if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to cast vote", "CAST_VOTE_FAILED", err);
-    }
-  },
-
-  async getFanMessages(): Promise<FanMessage[]> {
-    const supabase = createClient();
-    try {
-      const { data, error } = await supabase
-        .from("fan_messages")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw new RepositoryError(error.message, "FETCH_MESSAGES_FAILED", error);
-      if (!data) return [];
-
-      return data.map((d) => ({
-        id: d.id,
-        username: d.username,
-        message: d.message,
-        time: new Date(d.created_at).toLocaleDateString("tr-TR"),
-      }));
-    } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to fetch fan messages", "FETCH_MESSAGES_FAILED", err);
-    }
-  },
-
-  async addFanMessage(username: string, message: string): Promise<FanMessage> {
-    const supabase = createClient();
-    try {
-      const { data, error } = await supabase
-        .from("fan_messages")
-        .insert({
-          username,
-          message,
-        })
-        .select()
-        .single();
-
-      if (error) throw new RepositoryError(error.message, "ADD_MESSAGE_FAILED", error);
-      if (!data) throw new RepositoryError("No data returned from insert", "ADD_MESSAGE_FAILED");
-
-      return {
-        id: data.id,
-        username: data.username,
-        message: data.message,
-        time: new Date(data.created_at).toLocaleDateString("tr-TR"),
-      };
-    } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError("Failed to add message", "ADD_MESSAGE_FAILED", err);
+      throw new RepositoryError(
+        `[CommunityRepository] [polls] [RPC] - Failed to cast vote`,
+        "CAST_VOTE_FAILED",
+        err
+      );
     }
   },
 };
-
-// ---------------------------------------------------------------------------
-// Unified Export Selector
-// ---------------------------------------------------------------------------
-
-export const communityRepository: CommunityRepository = USE_MOCK_DATA
-  ? mockCommunityRepository
-  : supabaseCommunityRepository;

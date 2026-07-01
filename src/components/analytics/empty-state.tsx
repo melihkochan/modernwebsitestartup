@@ -13,13 +13,13 @@ interface EmptyStateProps {
 
 /**
  * Empty state display for when a data section has no content.
- * Used in Clips, Gallery, Suggestions, and any paginated list.
+ * Used in Gallery, Suggestions, and any paginated list.
  *
  * @example
  * <EmptyState
- *   icon={Film}
- *   title="No clips yet"
- *   description="Top clips will appear here once the streamer goes live."
+ *   icon={Images}
+ *   title="No images yet"
+ *   description="Top items will appear here once uploaded."
  *   action={<Button variant="outline">Refresh</Button>}
  * />
  */

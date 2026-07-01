@@ -362,17 +362,7 @@ export async function getFileUsageContext(publicUrl: string): Promise<string[]> 
       if (assets.og_image_url === publicUrl) contexts.push("Open Graph Image");
     }
 
-    const { data: clips } = await supabase
-      .from("clips")
-      .select("video_url, thumbnail_url")
-      .or(`video_url.eq.${publicUrl},thumbnail_url.eq.${publicUrl}`);
 
-    if (clips && clips.length > 0) {
-      clips.forEach((c) => {
-        if (c.video_url === publicUrl) contexts.push("Featured Clip (Video)");
-        if (c.thumbnail_url === publicUrl) contexts.push("Featured Clip (Thumbnail)");
-      });
-    }
 
     const { data: galleryItems } = await supabase
       .from("gallery")

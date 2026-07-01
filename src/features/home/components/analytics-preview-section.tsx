@@ -71,32 +71,44 @@ export function AnalyticsPreviewSection() {
                     <p
                       className="text-5xl font-bold tracking-tight text-[var(--text-primary)] tabular-nums"
                       style={{ fontFamily: "var(--font-outfit)" }}
-                      aria-label={`${metric.label}: ${metric.value.toLocaleString()}`}
+                      aria-label={`${metric.label}: ${metric.value !== null && metric.value !== undefined ? metric.value.toLocaleString() : "Not available"}`}
                     >
-                      <AnimatedCounter
-                        value={metric.value > 1000 ? Math.round(metric.value / 1000) : metric.value}
-                        duration={1.8}
-                      />
-                      {metric.value > 1000 && (
-                        <span className="text-2xl text-[var(--text-secondary)]">K</span>
+                      {metric.value !== null && metric.value !== undefined ? (
+                        <>
+                          <AnimatedCounter
+                            value={metric.value > 1000 ? Math.round(metric.value / 1000) : metric.value}
+                            duration={1.8}
+                          />
+                          {metric.value > 1000 && (
+                            <span className="text-2xl text-[var(--text-secondary)]">K</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-lg font-bold text-[var(--text-secondary)]">Not available</span>
                       )}
                     </p>
                   </div>
 
                   {/* Trend */}
-                  <div
-                    className={`flex items-center gap-1.5 text-xs ${
-                      metric.isPositive ? "text-[var(--success)]" : "text-[var(--live-red)]"
-                    }`}
-                  >
-                    {metric.isPositive ? (
-                      <TrendingUp className="h-3.5 w-3.5" aria-hidden />
-                    ) : (
-                      <TrendingDown className="h-3.5 w-3.5" aria-hidden />
-                    )}
-                    <span className="font-medium">{metric.change}</span>
-                    <span className="text-[var(--text-tertiary)] font-normal">vs last month</span>
-                  </div>
+                  {metric.change !== null && metric.change !== undefined && metric.isPositive !== null && metric.isPositive !== undefined ? (
+                    <div
+                      className={`flex items-center gap-1.5 text-xs ${
+                        metric.isPositive ? "text-[var(--success)]" : "text-[var(--live-red)]"
+                      }`}
+                    >
+                      {metric.isPositive ? (
+                        <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+                      ) : (
+                        <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                      <span className="font-medium">{metric.change}</span>
+                      <span className="text-[var(--text-tertiary)] font-normal">vs last month</span>
+                    </div>
+                  ) : (
+                    <div className="text-[10px] text-[var(--text-tertiary)]">
+                      Veri bekleniyor
+                    </div>
+                  )}
                 </div>
               ))}
             </StaggerChildren>

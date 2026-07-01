@@ -27,6 +27,14 @@ import { formatNumber } from "@/lib/utils";
 import Image from "next/image";
 import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
 import { cn } from "@/lib/utils";
+import { useAnalyticsMetrics, useAnalyticsTrends } from "../hooks/use-analytics";
+
+const METRIC_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "Peak Viewers": Users,
+  "Followers Gained": Flame,
+  "Hours Streamed": Clock,
+  "Estimated Views": Tv,
+};
 
 interface TooltipPayloadItem {
   value: number;
@@ -80,94 +88,18 @@ const CustomTooltip = ({ active, payload, label, activeMetric }: CustomTooltipPr
 };
 
 
-// ---------------------------------------------------------------------------
-// Mock Data for Analytics
-// ---------------------------------------------------------------------------
-
-const MOCK_METRICS = [
-  {
-    label: "Peak Viewers",
-    value: 18_240,
-    change: "+12.4%",
-    isPositive: true,
-    icon: Users,
-    glowColor: "rgba(0,242,154,0.15)",
-    textColor: "text-[var(--live-red)]",
-  },
-  {
-    label: "Followers Gained",
-    value: 14_850,
-    change: "+8.1%",
-    isPositive: true,
-    icon: Flame,
-    glowColor: "rgba(168,85,247,0.15)",
-    textColor: "text-purple-400",
-  },
-  {
-    label: "Hours Streamed",
-    value: 124.5,
-    change: "+22.7%",
-    isPositive: true,
-    icon: Clock,
-    glowColor: "rgba(59,130,246,0.15)",
-    textColor: "text-blue-400",
-  },
-  {
-    label: "Estimated Views",
-    value: 485_400,
-    change: "-1.2%",
-    isPositive: false,
-    icon: Tv,
-    glowColor: "rgba(245,158,11,0.15)",
-    textColor: "text-amber-400",
-  },
-];
-
-const DAILY_DATA = [
-  { name: "Mon", viewers: 8400, followers: 120, hours: 4.5 },
-  { name: "Tue", viewers: 11200, followers: 240, hours: 5.2 },
-  { name: "Wed", viewers: 9800, followers: 180, hours: 4.0 },
-  { name: "Thu", viewers: 12438, followers: 310, hours: 6.0 },
-  { name: "Fri", viewers: 14800, followers: 450, hours: 6.5 },
-  { name: "Sat", viewers: 10200, followers: 150, hours: 3.5 },
-  { name: "Sun", viewers: 11500, followers: 210, hours: 4.8 },
-];
-
-const WEEKLY_DATA = [
-  { name: "Week 1", viewers: 9200, followers: 1200, hours: 22.0 },
-  { name: "Week 2", viewers: 10500, followers: 1800, hours: 24.5 },
-  { name: "Week 3", viewers: 11800, followers: 2400, hours: 26.0 },
-  { name: "Week 4", viewers: 12438, followers: 3100, hours: 28.5 },
-];
-
-const MONTHLY_DATA = [
-  { name: "Jan", viewers: 6400, followers: 5200, hours: 88.0 },
-  { name: "Feb", viewers: 7800, followers: 6800, hours: 94.0 },
-  { name: "Mar", viewers: 9100, followers: 8400, hours: 104.5 },
-  { name: "Apr", viewers: 10800, followers: 11200, hours: 112.0 },
-  { name: "May", viewers: 12438, followers: 14850, hours: 124.5 },
-];
-
 export function AnalyticsPageClient() {
   const { data: siteAssets } = useSiteAssets();
   const [mounted, setMounted] = useState(false);
   const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("daily");
   const [activeMetric, setActiveMetric] = useState<"viewers" | "followers" | "hours">("viewers");
 
+  const { data: metrics = [], isLoading: isMetricsLoading } = useAnalyticsMetrics();
+  const { data: trendData = [], isLoading: isTrendsLoading } = useAnalyticsTrends(timeframe);
+
   useEffect(() => {
     setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
-
-  const getData = () => {
-    switch (timeframe) {
-      case "weekly":
-        return WEEKLY_DATA;
-      case "monthly":
-        return MONTHLY_DATA;
-      default:
-        return DAILY_DATA;
-    }
-  };
 
   const getMetricColor = () => {
     switch (activeMetric) {
@@ -243,59 +175,73 @@ export function AnalyticsPageClient() {
 
         {/* 4 KPI Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {MOCK_METRICS.map((metric, idx) => {
-            const IconComp = metric.icon;
-            return (
-              <GlassCard
-                key={idx}
-                className="relative p-6 border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-all duration-300 group"
-              >
-                {/* Radial Glow on hover */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-[var(--radius-lg)]"
-                  style={{
-                    background: `radial-gradient(circle at 10% 10%, ${metric.glowColor}, transparent 60%)`,
-                  }}
-                />
+          {isMetricsLoading ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <GlassCard key={idx} className="p-6 border border-[var(--border-default)] animate-pulse h-[140px]" />
+            ))
+          ) : (
+            metrics.map((metric, idx) => {
+              const IconComp = METRIC_ICONS[metric.label] || Users;
+              const hasValue = metric.value !== null && metric.value !== undefined;
+              const displayValue = hasValue
+                ? typeof metric.value === "number"
+                  ? metric.value % 1 === 0
+                    ? formatNumber(metric.value)
+                    : metric.value
+                  : metric.value
+                : "Not available";
+              const showTrend = metric.change !== null && metric.change !== undefined && metric.change !== "" && metric.isPositive !== null && metric.isPositive !== undefined;
 
-                <div className="flex items-center justify-between gap-4 relative z-10">
-                  <span className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-bold">
-                    {metric.label}
-                  </span>
-                  <div className="w-8 h-8 rounded-lg bg-[var(--bg-overlay)] border border-[var(--border-default)] flex items-center justify-center">
-                    <IconComp className="w-4 h-4 text-[var(--text-secondary)]" />
+              return (
+                <GlassCard
+                  key={idx}
+                  className="relative p-6 border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-all duration-300 group"
+                >
+                  {/* Radial Glow on hover */}
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-[var(--radius-lg)]"
+                    style={{
+                      background: `radial-gradient(circle at 10% 10%, ${metric.glowColor || "rgba(139,92,246,0.1)"}, transparent 60%)`,
+                    }}
+                  />
+
+                  <div className="flex items-center justify-between gap-4 relative z-10">
+                    <span className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider font-bold">
+                      {metric.label}
+                    </span>
+                    <div className="w-8 h-8 rounded-lg bg-[var(--bg-overlay)] border border-[var(--border-default)] flex items-center justify-center">
+                      <IconComp className="w-4 h-4 text-[var(--text-secondary)]" />
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-4 flex items-baseline gap-2.5 relative z-10">
-                  <span className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">
-                    {typeof metric.value === "number"
-                      ? metric.value % 1 === 0
-                        ? formatNumber(metric.value)
-                        : metric.value
-                      : metric.value}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-xs font-bold flex items-center gap-0.5",
-                      metric.isPositive ? "text-[var(--live-red)]" : "text-amber-500"
+                  <div className="mt-4 flex items-baseline gap-2.5 relative z-10">
+                    <span className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">
+                      {displayValue}
+                    </span>
+                    {showTrend && (
+                      <span
+                        className={cn(
+                          "text-xs font-bold flex items-center gap-0.5",
+                          metric.isPositive ? "text-[var(--live-red)]" : "text-amber-500"
+                        )}
+                      >
+                        {metric.isPositive ? (
+                          <TrendingUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <TrendingDown className="w-3.5 h-3.5" />
+                        )}
+                        {metric.change}
+                      </span>
                     )}
-                  >
-                    {metric.isPositive ? (
-                      <TrendingUp className="w-3.5 h-3.5" />
-                    ) : (
-                      <TrendingDown className="w-3.5 h-3.5" />
-                    )}
-                    {metric.change}
-                  </span>
-                </div>
+                  </div>
 
-                <div className="mt-2 text-[10px] text-[var(--text-tertiary)] relative z-10">
-                  Compared to previous period
-                </div>
-              </GlassCard>
-            );
-          })}
+                  <div className="mt-2 text-[10px] text-[var(--text-tertiary)] relative z-10">
+                    Compared to previous period
+                  </div>
+                </GlassCard>
+              );
+            })
+          )}
         </div>
 
         {/* Central Visualization Section */}
@@ -333,9 +279,37 @@ export function AnalyticsPageClient() {
 
             {/* Recharts Area Container with mounted guard */}
             <div className="h-[320px] w-full flex items-center justify-center relative bg-[rgba(10,10,10,0.1)] rounded-lg">
-              {mounted ? (
+              {!mounted || isTrendsLoading ? (
+                /* Static placeholder skeleton to prevent Hydration layout shift */
+                <div className="absolute inset-0 flex flex-col gap-4 p-4 animate-pulse">
+                  <div className="flex-1 border-b border-l border-white/5 flex items-end justify-between px-6">
+                    <div className="w-[10%] h-[35%] bg-white/5 rounded-t" />
+                    <div className="w-[10%] h-[60%] bg-white/5 rounded-t" />
+                    <div className="w-[10%] h-[45%] bg-white/5 rounded-t" />
+                    <div className="w-[10%] h-[75%] bg-white/5 rounded-t" />
+                    <div className="w-[10%] h-[90%] bg-white/5 rounded-t" />
+                    <div className="w-[10%] h-[55%] bg-white/5 rounded-t" />
+                    <div className="w-[10%] h-[70%] bg-white/5 rounded-t" />
+                  </div>
+                  <div className="flex justify-between px-6 text-[10px] text-white/10">
+                    <span>Mon</span>
+                    <span>Tue</span>
+                    <span>Wed</span>
+                    <span>Thu</span>
+                    <span>Fri</span>
+                    <span>Sat</span>
+                    <span>Sun</span>
+                  </div>
+                </div>
+              ) : trendData.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 text-center p-6 text-[var(--text-tertiary)] z-10">
+                  <Tv className="w-8 h-8 text-zinc-600 animate-pulse" />
+                  <span className="text-xs font-semibold text-[var(--text-secondary)]">Grafik verisi bulunmamaktadır</span>
+                  <span className="text-[10px] text-[var(--text-tertiary)]">Yeterli veri biriktiğinde yayın istatistikleri burada listelenecektir.</span>
+                </div>
+              ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={getData()} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="chartGlow" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={getMetricColor()} stopOpacity={0.2} />
@@ -370,28 +344,6 @@ export function AnalyticsPageClient() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : (
-                /* Static placeholder skeleton to prevent Hydration layout shift */
-                <div className="absolute inset-0 flex flex-col gap-4 p-4 animate-pulse">
-                  <div className="flex-1 border-b border-l border-white/5 flex items-end justify-between px-6">
-                    <div className="w-[10%] h-[35%] bg-white/5 rounded-t" />
-                    <div className="w-[10%] h-[60%] bg-white/5 rounded-t" />
-                    <div className="w-[10%] h-[45%] bg-white/5 rounded-t" />
-                    <div className="w-[10%] h-[75%] bg-white/5 rounded-t" />
-                    <div className="w-[10%] h-[90%] bg-white/5 rounded-t" />
-                    <div className="w-[10%] h-[55%] bg-white/5 rounded-t" />
-                    <div className="w-[10%] h-[70%] bg-white/5 rounded-t" />
-                  </div>
-                  <div className="flex justify-between px-6 text-[10px] text-white/10">
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span>Sat</span>
-                    <span>Sun</span>
-                  </div>
-                </div>
               )}
             </div>
           </GlassCard>

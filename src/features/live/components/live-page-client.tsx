@@ -4,12 +4,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   Clock,
-  Calendar,
   MessageSquare,
   Radio,
   Gamepad2,
   ExternalLink,
-  Info,
   RefreshCw,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,35 +18,11 @@ import { Badge } from "@/components/ui/badge";
 import { siteConfig } from "@/config/site";
 import Image from "next/image";
 import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
-import { useStreamInfo, useSchedule } from "../hooks/use-live";
+import { useStreamInfo } from "../hooks/use-live";
 import { useSuggestions } from "@/features/community/hooks/use-community";
-
-const translateDay = (day: string) => {
-  const mapping: Record<string, string> = {
-    Tuesday: "Salı",
-    Thursday: "Perşembe",
-    Friday: "Cuma",
-    Saturday: "Cumartesi",
-    Sunday: "Pazar",
-    Monday: "Pazartesi",
-    Wednesday: "Çarşamba",
-  };
-  return mapping[day] || day;
-};
-
-const translateGame = (game: string) => {
-  const mapping: Record<string, string> = {
-    "Valorant Ranked Grind": "Valorant Dereceli Serüveni",
-    "Variety Games / CS2": "CS2 / Çeşitli Oyunlar",
-    "ZehrArmy Custom Match Night": "ZehrArmy Özel Maç Gecesi",
-    "Apex / Just Chatting": "Apex / Sohbet & Muhabbet",
-  };
-  return mapping[game] || game;
-};
 
 export function LivePageClient() {
   const { data: streamInfo, isLoading: isStreamLoading } = useStreamInfo();
-  const { data: scheduleData } = useSchedule();
   const { data: siteAssets } = useSiteAssets();
   const { data: suggestions = [], isLoading: suggestionsLoading } = useSuggestions();
 
@@ -329,24 +303,7 @@ export function LivePageClient() {
                 )}
               </GlassCard>
 
-              {/* Previous Clips empty state showcase */}
-              <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold tracking-tight text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-                    Son Yayın Klipleri
-                  </h2>
-                </div>
 
-                <GlassCard className="p-8 text-center text-xs text-[var(--text-tertiary)] border border-dashed border-[var(--border-default)] rounded-xl flex flex-col items-center justify-center gap-2 bg-[rgba(10,10,10,0.1)]">
-                  <Info className="w-6 h-6 text-zinc-500" />
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-[var(--text-secondary)]">Henüz paylaşılmış yayın klibi bulunmuyor.</span>
-                    <span className="text-[10px] text-[var(--text-tertiary)]">
-                      Klipler yakında aktif edilecektir.
-                    </span>
-                  </div>
-                </GlassCard>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>

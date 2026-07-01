@@ -16,7 +16,7 @@ interface HoverLiftProps extends Omit<HTMLMotionProps<"div">, "whileHover" | "wh
  *
  * @example
  * <HoverLift amount={4}>
- *   <ClipCard />
+ *   <Card />
  * </HoverLift>
  */
 export function HoverLift({
