@@ -40,28 +40,6 @@ export function useUpvoteSuggestion() {
   });
 }
 
-/**
- * Hook to retrieve the currently active poll.
- */
-export function useActivePoll() {
-  return useQuery({
-    queryKey: queryKeys.community.poll(),
-    queryFn: () => communityRepository.getActivePoll(),
-  });
-}
 
-/**
- * Hook to cast a vote in the active poll.
- */
-export function useCastVote() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ pollId, optionId }: { pollId: string; optionId: string }) =>
-      communityRepository.castVote(pollId, optionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.community.poll() });
-    },
-  });
-}
 
 

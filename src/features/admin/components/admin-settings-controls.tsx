@@ -1,436 +1,413 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import { RefreshCw, Activity, Users, CheckCircle2, AlertCircle, ShieldAlert, Image as ImageIcon, Check, Search, Save } from "lucide-react";
-import { useCreatorSyncStatus, useTriggerCreatorSync } from "../hooks/use-admin";
-import { useSiteAssets, useUpdateSiteAssets } from "@/features/media/hooks/use-site-assets";
-import { useMediaList } from "@/features/media/hooks/use-media";
+import { RefreshCw, Save, Sliders, ShieldAlert, Loader2, AlertCircle } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { MediaBucket } from "@/features/media/types/media-types";
+import { useSiteSettings, useUpdateSiteSetting, useCreatorSyncStatus, useTriggerCreatorSync } from "../hooks/use-admin";
 
 export function AdminSettingsControls() {
-  const { data: syncStatus, isLoading: isSyncLoading, isError: isSyncError } = useCreatorSyncStatus();
+  const { data: settings = {}, isLoading: settingsLoading, refetch } = useSiteSettings();
+  const updateSettingMutation = useUpdateSiteSetting();
+
+  const { data: syncStatus, isLoading: syncLoading } = useCreatorSyncStatus();
   const { mutate: triggerSync, isPending: isSyncing } = useTriggerCreatorSync();
-  const { data: siteAssets, isLoading: isAssetsLoading } = useSiteAssets();
-  const updateAssetsMutation = useUpdateSiteAssets();
 
-  const [prevAssets, setPrevAssets] = useState<any>(null);
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [whiteLogoUrl, setWhiteLogoUrl] = useState("");
-  const [darkLogoUrl, setDarkLogoUrl] = useState("");
-  const [offlineCoverUrl, setOfflineCoverUrl] = useState("");
-  const [defaultThumbnailUrl, setDefaultThumbnailUrl] = useState("");
-  const [illustration404Url, setIllustration404Url] = useState("");
+  // Active settings tab
+  const [activeTab, setActiveTab] = useState<"general" | "hero" | "seo" | "social" | "sync">("general");
 
-  if (siteAssets && siteAssets !== prevAssets) {
-    setPrevAssets(siteAssets);
-    setAvatarUrl(siteAssets.avatarUrl || "");
-    setWhiteLogoUrl(siteAssets.whiteLogoUrl || "");
-    setDarkLogoUrl(siteAssets.darkLogoUrl || "");
-    setOfflineCoverUrl(siteAssets.offlineCoverUrl || "");
-    setDefaultThumbnailUrl(siteAssets.defaultThumbnailUrl || "");
-    setIllustration404Url(siteAssets.illustration404Url || "");
-  }
+  // General Settings state
+  const [streamerName, setStreamerName] = useState("");
+  const [copyrightText, setCopyrightText] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
 
-  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<string | null>(null);
-  const [pickerBucket, setPickerBucket] = useState<MediaBucket>("gallery");
-  const { data: mediaFiles } = useMediaList(pickerBucket);
-  const [mediaSearch, setMediaSearch] = useState("");
+  // Hero Settings state
+  const [heroTitle, setHeroTitle] = useState("");
+  const [heroSubtitle, setHeroSubtitle] = useState("");
+  const [heroCtaText, setHeroCtaText] = useState("");
 
-  if (isSyncLoading || isAssetsLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
-        <RefreshCw className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
-        <span className="text-sm font-semibold text-[var(--text-secondary)]">Ayarlar yükleniyor...</span>
-      </div>
-    );
-  }
+  // SEO Settings state
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [seoKeywords, setSeoKeywords] = useState("");
 
-  if (isSyncError || !syncStatus) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
-        <AlertCircle className="w-8 h-8 text-rose-500" />
-        <span className="text-sm font-semibold text-[var(--text-secondary)]">Ayarlar yüklenirken hata oluştu.</span>
-      </div>
-    );
-  }
+  // Social Settings state
+  const [kickUrl, setKickUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [discordUrl, setDiscordUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
 
-  const handleSaveAssets = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Sync state variables are already fetched from useCreatorSyncStatus hook!
+
+  useEffect(() => {
+    if (settings) {
+      // General
+      const site = settings.site || {};
+      setStreamerName(site.streamerName || "Melih Koçhan");
+      setCopyrightText(site.copyrightText || "© 2026 Melih Koçhan. Tüm Hakları Saklıdır.");
+      setContactEmail(site.contactEmail || "contact@melihkochan.com");
+
+      // Hero
+      const hero = settings.hero || {};
+      setHeroTitle(hero.title || "Donanımlı ve Kaliteli Yayın Deneyimi");
+      setHeroSubtitle(hero.subtitle || "Türkiye'nin en aktif topluluklarından biri ile her gün canlı yayınlarda buluşuyoruz.");
+      setHeroCtaText(hero.ctaText || "Yayınları İzle");
+
+      // SEO
+      const seo = settings.seo || {};
+      setSeoTitle(seo.title || "Melih Koçhan - Streamer Hub");
+      setSeoDescription(seo.description || "Melih Koçhan'ın resmî web portalı ve yayın arşivi.");
+      setSeoKeywords(seo.keywords || "Melih Koçhan, Kick, yayın, donanım, setup, topluluk");
+
+      // Social
+      const social = settings.social || {};
+      setKickUrl(social.kick || "https://kick.com/zehragn");
+      setYoutubeUrl(social.youtube || "https://youtube.com");
+      setTwitterUrl(social.twitter || "https://x.com");
+      setDiscordUrl(social.discord || "https://discord.gg");
+      setInstagramUrl(social.instagram || "https://instagram.com");
+    }
+  }, [settings]);
+
+  const handleSave = async (key: string, value: any) => {
     try {
-      await updateAssetsMutation.mutateAsync({
-        avatarUrl: avatarUrl.trim() || null,
-        whiteLogoUrl: whiteLogoUrl.trim() || null,
-        darkLogoUrl: darkLogoUrl.trim() || null,
-        offlineCoverUrl: offlineCoverUrl.trim() || null,
-        defaultThumbnailUrl: defaultThumbnailUrl.trim() || null,
-        illustration404Url: illustration404Url.trim() || null,
-      });
-      alert("Site varlıkları başarıyla güncellendi.");
+      await updateSettingMutation.mutateAsync({ key, value });
+      alert("Ayarlar başarıyla güncellendi.");
+      refetch();
     } catch (err) {
       console.error(err);
-      alert("Site varlıkları güncellenirken hata oluştu.");
+      alert("Ayarlar kaydedilirken hata oluştu.");
     }
   };
 
-  const handleOpenPicker = (targetKey: string) => {
-    setPickerTarget(targetKey);
-    if (targetKey === "avatarUrl") {
-      setPickerBucket("avatars");
-    } else {
-      setPickerBucket("gallery");
-    }
-    setIsMediaPickerOpen(true);
+  const saveGeneral = () => {
+    handleSave("site", { streamerName, copyrightText, contactEmail });
   };
 
-  const handleSelectMedia = (file: any) => {
-    if (!file.mimeType.startsWith("image/")) {
-      alert("Hata: Sadece resim dosyaları site varlığı olarak seçilebilir!");
-      return;
-    }
-
-    const url = file.publicUrl;
-    if (pickerTarget === "avatarUrl") setAvatarUrl(url);
-    if (pickerTarget === "whiteLogoUrl") setWhiteLogoUrl(url);
-    if (pickerTarget === "darkLogoUrl") setDarkLogoUrl(url);
-    if (pickerTarget === "offlineCoverUrl") setOfflineCoverUrl(url);
-    if (pickerTarget === "defaultThumbnailUrl") setDefaultThumbnailUrl(url);
-    if (pickerTarget === "illustration404Url") setIllustration404Url(url);
-    setIsMediaPickerOpen(false);
-    setPickerTarget(null);
+  const saveHero = () => {
+    handleSave("hero", { title: heroTitle, subtitle: heroSubtitle, ctaText: heroCtaText });
   };
 
-  const filteredMedia = (mediaFiles ?? []).filter((f) => {
-    if (mediaSearch && !f.name.toLowerCase().includes(mediaSearch.toLowerCase())) {
-      return false;
-    }
-    if (!f.mimeType.startsWith("image/")) {
-      return false;
-    }
-    if (pickerTarget === "avatarUrl") {
-      return f.bucket === "avatars" || f.name.toLowerCase().includes("avatar");
-    }
-    if (pickerTarget === "whiteLogoUrl" || pickerTarget === "darkLogoUrl") {
-      return f.name.toLowerCase().includes("logo");
-    }
-    if (pickerTarget === "offlineCoverUrl" || pickerTarget === "defaultThumbnailUrl") {
-      return (
-        f.name.toLowerCase().includes("cover") ||
-        f.name.toLowerCase().includes("banner") ||
-        f.name.toLowerCase().includes("thumbnail")
-      );
-    }
-    if (pickerTarget === "illustration404Url") {
-      return (
-        f.name.toLowerCase().includes("404") ||
-        f.name.toLowerCase().includes("illustration") ||
-        f.name.toLowerCase().includes("error")
-      );
-    }
-    return true;
-  });
+  const saveSeo = () => {
+    handleSave("seo", { title: seoTitle, description: seoDescription, keywords: seoKeywords });
+  };
 
-  const assetFields = [
-    { key: "avatarUrl", label: "Yayıncı Avatarı (Avatar)", val: avatarUrl, set: setAvatarUrl },
-    { key: "whiteLogoUrl", label: "Beyaz Logo (Light Theme/Navbar)", val: whiteLogoUrl, set: setWhiteLogoUrl },
-    { key: "darkLogoUrl", label: "Koyu Logo (Dark Theme/Navbar)", val: darkLogoUrl, set: setDarkLogoUrl },
-    { key: "offlineCoverUrl", label: "Çevrimdışı Kapak Görseli (Offline Cover)", val: offlineCoverUrl, set: setOfflineCoverUrl },
-    { key: "defaultThumbnailUrl", label: "Varsayılan Yayın Görseli (Default Thumbnail)", val: defaultThumbnailUrl, set: setDefaultThumbnailUrl },
-    { key: "illustration404Url", label: "404 Sayfa İllüstrasyonu (404 Illustration)", val: illustration404Url, set: setIllustration404Url },
-  ];
+  const saveSocial = () => {
+    handleSave("social", {
+      kick: kickUrl,
+      youtube: youtubeUrl,
+      twitter: twitterUrl,
+      discord: discordUrl,
+      instagram: instagramUrl,
+    });
+  };
+
+  if (settingsLoading || syncLoading) {
+    return (
+      <div className="flex justify-center p-12">
+        <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-8 w-full">
+    <div className="flex flex-col gap-6 w-full">
+      {/* Header */}
       <GlassCard className="p-6 border border-[var(--border-default)] bg-[rgba(10,10,10,0.45)] rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-[var(--shadow-sm)]">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <Badge className="border-none text-white text-[10px] font-bold px-2 py-0.5 bg-[var(--accent-primary)]">
-              SİSTEM AYARLARI
-            </Badge>
-          </div>
+        <div className="flex flex-col gap-1">
           <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-            Ayarlar
+            Site Ayarları
           </h1>
           <p className="text-xs text-[var(--text-secondary)]">
-            Veritabanı senkronizasyon motorunu yönetin ve site genelindeki marka varlıklarını özelleştirin.
+            Site başlıklarını, sosyal medya adreslerini, SEO etiketlerini ve arka plan senkronizasyon motorunu yönetin.
           </p>
         </div>
       </GlassCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <GlassCard className="lg:col-span-8 p-6 border border-[var(--border-default)] flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <RefreshCw className={cn("w-5 h-5 text-[var(--accent-primary)]", isSyncing && "animate-spin")} />
-              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
-                Kick Senkronizasyon Ayarları
-              </h2>
-            </div>
-            <Badge className={cn(
-              "border-none text-white text-[10px] font-bold px-2 py-0.5 rounded-full",
-              isSyncing ? "bg-amber-500 animate-pulse" :
-              syncStatus.status === "success" ? "bg-emerald-500" :
-              syncStatus.status === "failed" ? "bg-[var(--live-red)]" : "bg-zinc-700"
-            )}>
-              {isSyncing ? "EŞİTLENİYOR..." :
-               syncStatus.status === "success" ? "BAŞARILI" :
-               syncStatus.status === "failed" ? "HATA" : "BOŞTA"}
-            </Badge>
-          </div>
+        {/* Menu/Sidebar */}
+        <div className="lg:col-span-3 flex flex-col gap-2">
+          <button
+            onClick={() => setActiveTab("general")}
+            className={cn(
+              "text-left px-4 py-2.5 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+              activeTab === "general"
+                ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+            )}
+          >
+            Genel Ayarlar
+          </button>
+          <button
+            onClick={() => setActiveTab("hero")}
+            className={cn(
+              "text-left px-4 py-2.5 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+              activeTab === "hero"
+                ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+            )}
+          >
+            Hero Bölümü
+          </button>
+          <button
+            onClick={() => setActiveTab("seo")}
+            className={cn(
+              "text-left px-4 py-2.5 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+              activeTab === "seo"
+                ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+            )}
+          >
+            SEO & Meta
+          </button>
+          <button
+            onClick={() => setActiveTab("social")}
+            className={cn(
+              "text-left px-4 py-2.5 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+              activeTab === "social"
+                ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+            )}
+          >
+            Sosyal Medya Linkleri
+          </button>
+          <button
+            onClick={() => setActiveTab("sync")}
+            className={cn(
+              "text-left px-4 py-2.5 text-xs font-semibold rounded-xl transition-all cursor-pointer",
+              activeTab === "sync"
+                ? "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20"
+                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
+            )}
+          >
+            Senkronizasyon Motoru
+          </button>
+        </div>
 
-          <div className="flex flex-col gap-3.5 font-mono text-[11px] text-[var(--text-secondary)]">
-            <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2.5">
-              <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-zinc-500" /> Platform
-              </span>
-              <span className="font-bold text-[var(--text-primary)] capitalize">
-                {syncStatus.provider || "kick"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center border-b border-[var(--border-subtle)] pb-2.5">
-              <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-zinc-500" /> Kanal İsmi (Slug)
-              </span>
-              <span className="font-bold text-zinc-400">
-                @{syncStatus.channel || "zehragn"}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-2.5">
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Son Başarılı Eşitleme
-                </span>
-                <span className="text-[10px] text-[var(--text-primary)]">
-                  {syncStatus.last_success_at
-                    ? new Date(syncStatus.last_success_at).toLocaleTimeString()
-                    : "Hiçbir zaman"}
-                </span>
-              </div>
-              {syncStatus.last_success_at && (
-                <span className="text-[9px] text-[var(--text-tertiary)] text-right">
-                  {new Date(syncStatus.last_success_at).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-1 border-b border-[var(--border-subtle)] pb-1">
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-tertiary)] flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 text-red-500" /> Son Başarısız Eşitleme
-                </span>
-                <span className="text-[10px] text-[var(--text-primary)]">
-                  {syncStatus.last_failed_at
-                    ? new Date(syncStatus.last_failed_at).toLocaleTimeString()
-                    : "Yok"}
-                </span>
-              </div>
-              {syncStatus.last_failed_at && (
-                <span className="text-[9px] text-[var(--text-tertiary)] text-right">
-                  {new Date(syncStatus.last_failed_at).toLocaleDateString()}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {syncStatus.error && (
-            <div className="p-2.5 rounded-lg border border-red-500/20 bg-red-500/5 text-[10px] text-red-400 font-mono break-all max-h-[80px] overflow-y-auto">
-              Hata Mesajı: {syncStatus.error}
-            </div>
+        {/* Content Pane */}
+        <div className="lg:col-span-9 flex flex-col gap-6">
+          {activeTab === "general" && (
+            <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Genel Ayarlar</h2>
+              <Input
+                label="Yayıncı / Marka İsmi"
+                value={streamerName}
+                onChange={(e) => setStreamerName(e.target.value)}
+                className="text-xs"
+              />
+              <Input
+                label="İletişim E-posta Adresi"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                className="text-xs"
+              />
+              <Textarea
+                label="Footer Alt Telif Metni"
+                value={copyrightText}
+                onChange={(e) => setCopyrightText(e.target.value)}
+                className="text-xs min-h-[60px] resize-none"
+              />
+              <Button
+                onClick={saveGeneral}
+                className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none flex items-center gap-1.5 cursor-pointer w-fit mt-2"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Ayarları Kaydet
+              </Button>
+            </GlassCard>
           )}
 
-          <Button
-            onClick={() => triggerSync()}
-            disabled={isSyncing}
-            className="w-full h-9 bg-gradient-to-r from-[var(--accent-primary)] to-indigo-600 hover:from-[var(--accent-primary)]/90 hover:to-indigo-600/90 text-white font-bold text-[10px] tracking-wider uppercase rounded-lg shadow-lg cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            {isSyncing ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                Senkronize ediliyor...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-3.5 h-3.5" />
-                Şimdi Eşitle
-              </>
-            )}
-          </Button>
-        </GlassCard>
+          {activeTab === "hero" && (
+            <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Hero Giriş Bölümü Ayarları</h2>
+              <Input
+                label="Ana Başlık (Title)"
+                value={heroTitle}
+                onChange={(e) => setHeroTitle(e.target.value)}
+                className="text-xs"
+              />
+              <Textarea
+                label="Alt Başlık / Slogan (Subtitle)"
+                value={heroSubtitle}
+                onChange={(e) => setHeroSubtitle(e.target.value)}
+                className="text-xs min-h-[80px] resize-none"
+              />
+              <Input
+                label="CTA Buton Metni"
+                value={heroCtaText}
+                onChange={(e) => setHeroCtaText(e.target.value)}
+                className="text-xs"
+              />
+              <Button
+                onClick={saveHero}
+                className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none flex items-center gap-1.5 cursor-pointer w-fit mt-2"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Hero Ayarlarını Kaydet
+              </Button>
+            </GlassCard>
+          )}
 
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          <GlassCard className="p-5 border border-[var(--border-default)] bg-[rgba(10,10,10,0.25)] relative overflow-hidden flex flex-col gap-4">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_90%_90%,rgba(168,85,247,0.05),transparent_60%)] pointer-events-none" />
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <ShieldAlert className="w-4.5 h-4.5" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wide">
-                Senkronizasyon Motoru Bilgileri
-              </h4>
-              <ul className="text-[10px] text-[var(--text-secondary)] leading-relaxed list-disc pl-4 flex flex-col gap-1.5">
-                <li>
-                  <strong className="text-[var(--text-primary)]">Takipçi Sayısı:</strong> Kick API takipçi sayısını doğrudan sunmadığından bu değer senkronize edilemez.
-                </li>
-                <li>
-                  <strong className="text-[var(--text-primary)]">Abone Sayısı:</strong> Kick API üzerinden gerçek zamanlı aktif aboneler çekilir.
-                </li>
-                <li>
-                  <strong className="text-[var(--text-primary)]">Yayın Geçmişi:</strong> Canlı durumdan çevrimdışı duruma geçişler sistem tarafından tespit edilerek otomatik kayıt oluşturulur.
-                </li>
-              </ul>
-            </div>
-          </GlassCard>
-        </div>
-      </div>
+          {activeTab === "seo" && (
+            <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">SEO & Meta Arama Motoru Ayarları</h2>
+              <Input
+                label="Varsayılan Sayfa Başlığı (Title Tag)"
+                value={seoTitle}
+                onChange={(e) => setSeoTitle(e.target.value)}
+                className="text-xs"
+              />
+              <Textarea
+                label="Meta Açıklaması (Meta Description)"
+                value={seoDescription}
+                onChange={(e) => setSeoDescription(e.target.value)}
+                className="text-xs min-h-[80px] resize-none"
+              />
+              <Input
+                label="Anahtar Kelimeler (Keywords - virgülle ayrılmış)"
+                value={seoKeywords}
+                onChange={(e) => setSeoKeywords(e.target.value)}
+                className="text-xs"
+              />
+              <Button
+                onClick={saveSeo}
+                className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none flex items-center gap-1.5 cursor-pointer w-fit mt-2"
+              >
+                <Save className="w-3.5 h-3.5" />
+                SEO Ayarlarını Kaydet
+              </Button>
+            </GlassCard>
+          )}
 
-      <GlassCard className="p-6 border border-[var(--border-default)] bg-[rgba(10,10,10,0.45)] rounded-2xl flex flex-col gap-6 shadow-[var(--shadow-sm)]">
-        <div>
-          <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
-            Site Görsel ve Marka Varlıkları Yönetimi (Site Assets)
-          </h2>
-          <p className="text-[11px] text-[var(--text-secondary)] mt-1">
-            Site genelinde kullanılan tüm logoları, kapakları, avatarı ve boş durum illüstrasyonlarını güncelleyin.
-          </p>
-        </div>
+          {activeTab === "social" && (
+            <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Sosyal Medya Adresleri</h2>
+              <Input
+                label="Kick Kanal Linki"
+                value={kickUrl}
+                onChange={(e) => setKickUrl(e.target.value)}
+                className="text-xs"
+              />
+              <Input
+                label="YouTube Kanal Linki"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                className="text-xs"
+              />
+              <Input
+                label="Twitter / X Profili"
+                value={twitterUrl}
+                onChange={(e) => setTwitterUrl(e.target.value)}
+                className="text-xs"
+              />
+              <Input
+                label="Discord Sunucu Daveti"
+                value={discordUrl}
+                onChange={(e) => setDiscordUrl(e.target.value)}
+                className="text-xs"
+              />
+              <Input
+                label="Instagram Profili"
+                value={instagramUrl}
+                onChange={(e) => setInstagramUrl(e.target.value)}
+                className="text-xs"
+              />
+              <Button
+                onClick={saveSocial}
+                className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none flex items-center gap-1.5 cursor-pointer w-fit mt-2"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Linkleri Kaydet
+              </Button>
+            </GlassCard>
+          )}
 
-        <form onSubmit={handleSaveAssets} className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {assetFields.map((field) => (
-              <div key={field.key} className="flex flex-col gap-2 p-4 rounded-xl border border-[var(--border-subtle)] bg-[rgba(10,10,10,0.15)] justify-between">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-[var(--text-primary)]">{field.label}</label>
-                  <div className="flex gap-2 mt-1.5">
-                    <Input
-                      value={field.val}
-                      onChange={(e) => field.set(e.target.value)}
-                      placeholder="Medya kütüphanesinden seçin..."
-                      className="h-9 text-xs flex-1 bg-[var(--bg-base)] border-[var(--border-default)]"
-                      disabled
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => handleOpenPicker(field.key)}
-                      className="h-9 px-3 text-xs bg-zinc-800 border-none hover:bg-zinc-700 text-white cursor-pointer"
-                    >
-                      Seç
-                    </Button>
-                    {field.val && (
-                      <Button
-                        type="button"
-                        onClick={() => field.set("")}
-                        className="h-9 px-3 text-xs bg-rose-950 border border-rose-900/50 hover:bg-rose-900 text-rose-300 cursor-pointer"
-                      >
-                        Temizle
-                      </Button>
-                    )}
-                  </div>
+          {activeTab === "sync" && (
+            <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className={cn("w-5 h-5 text-[var(--accent-primary)]", isSyncing && "animate-spin")} />
+                  <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+                    Kick Senkronizasyon Ayarları
+                  </h2>
                 </div>
-
-                {field.val && field.val.trim() !== "" && (
-                  <div className="relative w-full h-24 mt-3 rounded-lg overflow-hidden border border-[var(--border-default)] bg-black">
-                    <Image
-                      src={field.val}
-                      alt={field.label}
-                      fill
-                      className="object-contain"
-                      unoptimized={process.env.NODE_ENV === "development"}
-                    />
-                  </div>
+                {syncStatus && (
+                  <Badge className={cn(
+                    "border-none text-white text-[10px] font-bold px-2 py-0.5 rounded-full",
+                    isSyncing ? "bg-amber-500 animate-pulse" :
+                    syncStatus.status === "success" ? "bg-emerald-500" :
+                    syncStatus.status === "failed" ? "bg-rose-500" : "bg-zinc-700"
+                  )}>
+                    {isSyncing ? "Senkronize Ediliyor" :
+                     syncStatus.status === "success" ? "Aktif / Başarılı" :
+                     syncStatus.status === "failed" ? "Hata Oluştu" : "Boşta"}
+                  </Badge>
                 )}
               </div>
-            ))}
-          </div>
 
-          <Button
-            type="submit"
-            disabled={updateAssetsMutation.isPending}
-            className="h-10 px-5 text-xs bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white border-none cursor-pointer self-end flex items-center gap-2 font-bold uppercase tracking-wider rounded-lg shadow-lg"
-          >
-            {updateAssetsMutation.isPending ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                Kaydediliyor...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Ayarları Kaydet
-              </>
-            )}
-          </Button>
-        </form>
-      </GlassCard>
-
-      {isMediaPickerOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <GlassCard className="w-full max-w-2xl border border-[var(--border-default)] rounded-xl p-6 bg-[rgba(10,10,10,0.98)] max-h-[85vh] flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-[var(--text-primary)]" style={{ fontFamily: "var(--font-outfit)" }}>
-                Medya Kütüphanesinden Dosya Seç
-              </h3>
-              <button onClick={() => { setIsMediaPickerOpen(false); setPickerTarget(null); }} className="text-zinc-400 hover:text-zinc-200 text-xs font-semibold cursor-pointer">Kapat</button>
-            </div>
-
-            <div className="flex gap-2 p-0.5 bg-[var(--bg-overlay)] border border-[var(--border-default)] rounded-lg self-start">
-              {(["gallery", "thumbnails", "avatars"] as const).map((b) => (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => setPickerBucket(b)}
-                  className={`px-4 py-1.5 text-xs font-semibold rounded-md capitalize transition-colors cursor-pointer ${pickerBucket === b ? "bg-[var(--accent-primary)] text-white" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
-                >
-                  {b === "gallery" ? "Galeri" : b === "thumbnails" ? "Küçük Resimler" : "Avatarlar"}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-              <Input
-                value={mediaSearch}
-                onChange={(e) => setMediaSearch(e.target.value)}
-                placeholder="Dosya adına göre ara..."
-                className="pl-9 h-9 text-xs"
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-4 p-1 min-h-[250px]">
-              {filteredMedia.length === 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center text-zinc-500 text-xs py-8">
-                  Dosya bulunamadı.
+              {syncStatus ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="flex flex-col gap-1 p-3 bg-zinc-950/20 border border-[var(--border-subtle)] rounded-lg">
+                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Senkronize Edilen Kanal</span>
+                    <span className="font-mono font-bold text-[var(--text-primary)]">@{syncStatus.channel}</span>
+                  </div>
+                  <div className="flex flex-col gap-1 p-3 bg-zinc-950/20 border border-[var(--border-subtle)] rounded-lg">
+                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Sağlayıcı</span>
+                    <span className="font-mono font-bold text-[var(--text-primary)] uppercase">{syncStatus.provider}</span>
+                  </div>
+                  <div className="flex flex-col gap-1 p-3 bg-zinc-950/20 border border-[var(--border-subtle)] rounded-lg">
+                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Son Başarılı Senkronizasyon</span>
+                    <span className="font-mono font-bold text-[var(--text-primary)]">
+                      {syncStatus.last_success_at ? new Date(syncStatus.last_success_at).toLocaleString("tr-TR") : "Senkronizasyon yapılmadı"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 p-3 bg-zinc-950/20 border border-[var(--border-subtle)] rounded-lg">
+                    <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Toplam Güncellenen Sütun / Tablo</span>
+                    <span className="font-mono font-bold text-[var(--text-primary)]">
+                      {syncStatus.updated_records} kayıt ({syncStatus.updated_tables} tablo)
+                    </span>
+                  </div>
                 </div>
               ) : (
-                filteredMedia.map((file) => (
-                  <div
-                    key={file.path}
-                    onClick={() => handleSelectMedia(file)}
-                    className="group relative aspect-video bg-zinc-950 border border-[var(--border-default)] hover:border-[var(--accent-primary)] rounded-lg overflow-hidden cursor-pointer transition-all flex items-center justify-center"
-                  >
-                    <Image
-                      src={file.publicUrl}
-                      alt={file.name}
-                      fill
-                      className="object-cover"
-                      unoptimized={process.env.NODE_ENV === "development"}
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Check className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                ))
+                <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-start gap-3">
+                  <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
+                  <p className="text-xs text-rose-300 leading-relaxed">
+                    Kick Sync status veritabanında henüz tanımlanmamış. Edge Function ilk çalıştığında bu durum otomatik kaydedilir.
+                  </p>
+                </div>
               )}
-            </div>
-          </GlassCard>
+
+              <div className="border-t border-[var(--border-subtle)] pt-4 flex flex-col gap-3">
+                <span className="text-[10px] text-[var(--text-tertiary)] leading-relaxed">
+                  Kick Sync Edge Function'ı normal şartlarda web-hook entegrasyonu ile Kick canlı yayın sinyalleri doğrultusunda arka planda çalışır. Dilerseniz hemen şimdi manuel olarak tetikleyebilirsiniz:
+                </span>
+                <Button
+                  onClick={() => triggerSync()}
+                  disabled={isSyncing}
+                  className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none flex items-center gap-1.5 cursor-pointer w-fit disabled:opacity-50"
+                >
+                  {isSyncing ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Senkronizasyon Başlatılıyor...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Şimdi Senkronize Et (Manuel)
+                    </>
+                  )}
+                </Button>
+              </div>
+            </GlassCard>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

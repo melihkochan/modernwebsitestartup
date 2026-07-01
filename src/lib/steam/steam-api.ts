@@ -19,7 +19,12 @@ export async function fetchSteamGameDetails(appId: number): Promise<SteamGameDet
   }
 
   try {
-    const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}&l=turkish&cc=tr`);
+    const isBrowser = typeof window !== "undefined";
+    const url = isBrowser
+      ? `/api/steam/details?appId=${appId}`
+      : `https://store.steampowered.com/api/appdetails?appids=${appId}&l=turkish&cc=tr`;
+
+    const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data[appId]?.success) {

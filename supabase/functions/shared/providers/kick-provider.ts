@@ -6,6 +6,7 @@ import { CreatorProvider, CreatorProfile, StreamState, ChannelInfo } from "./cre
 // ---------------------------------------------------------------------------
 
 export const KickStreamSchema = z.object({
+  id: z.union([z.string(), z.number()]).optional().nullable(),
   url: z.string().optional().nullable(),
   key: z.string().optional().nullable(),
   is_live: z.boolean(),
@@ -221,6 +222,8 @@ export class KickProvider implements CreatorProvider {
       viewerCount: isLive ? stream.viewer_count || 0 : 0,
       startedAt: isLive ? stream.start_time || null : null,
       thumbnailUrl: isLive ? stream.thumbnail || null : null,
+      externalId: isLive && stream.id ? String(stream.id) : null,
+      language: isLive ? stream.language || "tr" : null,
     };
   }
 

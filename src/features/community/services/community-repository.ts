@@ -6,8 +6,6 @@ export interface CommunityRepository {
   getSuggestions(): Promise<GameSuggestion[]>;
   suggestGame(game: Omit<GameSuggestion, "id" | "votes" | "isUpvoted">): Promise<GameSuggestion>;
   upvoteSuggestion(id: string): Promise<void>;
-  getActivePoll(): Promise<Poll | null>;
-  castVote(pollId: string, optionId: string): Promise<Poll | null>;
 }
 
 export const communityRepository: CommunityRepository = {
@@ -22,6 +20,7 @@ export const communityRepository: CommunityRepository = {
             username
           )
         `)
+        .eq("status", "approved")
         .order("votes_count", { ascending: false });
 
       if (error) {
@@ -57,6 +56,47 @@ export const communityRepository: CommunityRepository = {
   async suggestGame(game: Omit<GameSuggestion, "id" | "votes" | "isUpvoted">): Promise<GameSuggestion> {
     const supabase = createClient();
     try {
+      let existing = null;
+      if (game.steamAppId) {
+        const { data } = await supabase
+          .from("game_suggestions")
+          .select("id, status")
+          .eq("steam_appid", game.steamAppId)
+          .maybeSingle();
+        existing = data;
+      } else {
+        const { data } = await supabase
+          .from("game_suggestions")
+          .select("id, status")
+          .ilike("game_title", game.game)
+          .maybeSingle();
+        existing = data;
+      }
+
+      if (existing) {
+        const { error: rpcError } = await supabase.rpc("increment_suggestion_votes", { suggestion_id: existing.id });
+        if (rpcError) throw rpcError;
+
+        if (existing.status === "rejected") {
+          await supabase
+            .from("game_suggestions")
+            .update({ status: "pending" })
+            .eq("id", existing.id);
+        }
+
+        return {
+          id: existing.id,
+          game: game.game,
+          votes: 1,
+          submittedBy: "Topluluk",
+          platform: game.platform || "PC",
+          description: game.description,
+          isUpvoted: true,
+          steamAppId: game.steamAppId,
+          coverImageUrl: game.coverImageUrl || "",
+        };
+      }
+
       const { data, error } = await supabase
         .from("game_suggestions")
         .insert({
@@ -128,85 +168,6 @@ export const communityRepository: CommunityRepository = {
       throw new RepositoryError(
         `[CommunityRepository] [game_suggestions] [RPC] - Failed to cast upvote`,
         "UPVOTE_FAILED",
-        err
-      );
-    }
-  },
-
-  async getActivePoll(): Promise<Poll | null> {
-    const supabase = createClient();
-    try {
-      const { data, error } = await supabase
-        .from("polls")
-        .select("*")
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (error) {
-        throw new RepositoryError(
-          `[CommunityRepository] [polls] [SELECT] [is_active] - ${error.message}`,
-          "FETCH_POLL_FAILED",
-          error
-        );
-      }
-      if (!data) return null;
-
-      const rawOptions = (data.options as unknown as Array<{ id: string; label: string; votes?: number }>) || [];
-      const options = rawOptions.map((opt) => ({
-        id: opt.id,
-        label: opt.label,
-        votes: opt.votes || 0,
-      }));
-
-      const totalVotes = options.reduce((acc: number, curr) => acc + curr.votes, 0);
-
-      return {
-        id: data.id,
-        question: data.question || "",
-        options,
-        totalVotes,
-        endsIn: data.expires_at ? "Active" : "Closed",
-      };
-    } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[CommunityRepository] [polls] [SELECT] - Failed to fetch active poll`,
-        "FETCH_POLL_FAILED",
-        err
-      );
-    }
-  },
-
-  async castVote(pollId: string, optionId: string): Promise<Poll | null> {
-    const supabase = createClient();
-    try {
-      let fingerprint = typeof window !== "undefined" ? localStorage.getItem("vote_fingerprint") : null;
-      if (!fingerprint) {
-        fingerprint = "anon_" + Math.random().toString(36).substring(2, 15);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("vote_fingerprint", fingerprint);
-        }
-      }
-
-      const { error } = await supabase.rpc("cast_poll_vote", {
-        poll_id: pollId,
-        option_id: optionId,
-        fingerprint: fingerprint,
-      });
-
-      if (error) {
-        throw new RepositoryError(
-          `[CommunityRepository] [polls] [RPC:cast_poll_vote] [poll_id, option_id] - ${error.message}`,
-          "CAST_VOTE_FAILED",
-          error
-        );
-      }
-      return this.getActivePoll();
-    } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[CommunityRepository] [polls] [RPC] - Failed to cast vote`,
-        "CAST_VOTE_FAILED",
         err
       );
     }

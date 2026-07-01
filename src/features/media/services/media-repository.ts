@@ -173,7 +173,8 @@ export async function uploadFile(
       .insert({
         title: insertTitle,
         description: insertDescription,
-        image_url: urlData.publicUrl,
+        storage_path: path,
+        mime_type: uploadMimeType,
         thumbnail_url: null,
         category: insertCategory,
         alt_text: insertAltText,
@@ -181,7 +182,7 @@ export async function uploadFile(
         height: height ?? null,
         file_size: uploadBlob.size,
         is_featured: insertIsFeatured,
-        order_index: 0,
+        display_order: 0,
         usage_context: "galeri"
       });
 
@@ -234,7 +235,7 @@ export async function deleteFile(bucket: MediaBucket, path: string): Promise<voi
     const { error: dbError } = await supabase
       .from("gallery")
       .delete()
-      .eq("image_url", publicUrl);
+      .eq("storage_path", path);
 
     if (dbError) {
       throw new RepositoryError(`Galeri kaydı silinemedi: ${dbError.message}`, "DELETE_GALLERY_RECORD_FAILED", dbError);
@@ -281,10 +282,10 @@ export async function renameFile(
       .from("gallery")
       .update({
         title: cleanTitle,
-        image_url: newPublicUrl,
+        storage_path: newPath,
         alt_text: cleanTitle
       })
-      .eq("image_url", oldPublicUrl);
+      .eq("storage_path", oldPath);
 
     if (dbError) {
       throw new RepositoryError(`Galeri kaydı güncellenemedi: ${dbError.message}`, "UPDATE_GALLERY_RECORD_FAILED", dbError);
@@ -364,10 +365,13 @@ export async function getFileUsageContext(publicUrl: string): Promise<string[]> 
 
 
 
+    const pathWithBucket = publicUrl.split("/public/").pop() || "";
+    const relativePath = pathWithBucket.includes("/") ? pathWithBucket.split("/").slice(1).join("/") : pathWithBucket;
+
     const { data: galleryItems } = await supabase
       .from("gallery")
       .select("is_featured")
-      .eq("image_url", publicUrl);
+      .or(`storage_path.eq."${relativePath}",storage_path.eq."${pathWithBucket}"`);
 
     if (galleryItems && galleryItems.length > 0) {
       galleryItems.forEach((g) => {
@@ -382,20 +386,13 @@ export async function getFileUsageContext(publicUrl: string): Promise<string[]> 
     const { data: setupItems } = await supabase
       .from("setup_items")
       .select("id")
-      .eq("image_url", publicUrl);
+      .or(`storage_path.eq."${relativePath}",storage_path.eq."${pathWithBucket}"`);
 
     if (setupItems && setupItems.length > 0) {
       contexts.push("Setup Item Image");
     }
 
-    const { data: timelineItems } = await supabase
-      .from("timeline")
-      .select("id")
-      .eq("media_url", publicUrl);
 
-    if (timelineItems && timelineItems.length > 0) {
-      contexts.push("Timeline Event Media");
-    }
   } catch (err) {
     console.error("Failed to check file usage:", err);
   }

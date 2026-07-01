@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Users, MessageSquare, Tv, Clock, RefreshCw, Info } from "lucide-react";
+import { Users, Tv, Clock, RefreshCw, Info } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -163,21 +163,7 @@ export function AdminLiveControls() {
             </div>
           </GlassCard>
 
-          <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4 min-h-[300px]">
-            <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3">
-              <MessageSquare className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
-              Canlı Sohbet Akışı
-            </h2>
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 border border-dashed border-[var(--border-default)] rounded-xl bg-[rgba(10,10,10,0.1)] gap-3">
-              <MessageSquare className="w-8 h-8 text-zinc-600" />
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-[var(--text-secondary)]">Canlı Sohbet Entegrasyonu Pasif</span>
-                <span className="text-[10px] text-[var(--text-tertiary)] max-w-md">
-                  Canlı sohbet entegrasyonu henüz aktif değil. Sohbet verisi için Supabase Realtime bağlantısı gerekmektedir.
-                </span>
-              </div>
-            </div>
-          </GlassCard>
+
         </div>
 
         <div className="lg:col-span-4 flex flex-col gap-8">

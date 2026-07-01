@@ -265,69 +265,128 @@ export type Database = {
           },
         ]
       }
-      clips: {
+      admin_activity_logs: {
         Row: {
-          created_at: string
-          created_by: string | null
-          duration: number
           id: string
-          is_featured: boolean | null
-          kick_clip_id: string | null
-          thumbnail_url: string
-          title: string
-          updated_at: string
-          video_url: string | null
-          kick_url: string | null
-          view_count: number | null
-          description: string | null
-          category: string | null
-          game: string | null
-          visibility: string | null
-          display_order: number
-          likes: number
-          views: number
+          admin_id: string | null
+          action: string
+          entity: string
+          entity_id: string | null
+          old_data: Json | null
+          new_data: Json | null
+          created_at: string
         }
         Insert: {
-          created_at?: string
-          created_by?: string | null
-          duration: number
           id?: string
-          is_featured?: boolean | null
-          kick_clip_id?: string | null
-          thumbnail_url: string
-          title: string
-          updated_at?: string
-          video_url?: string | null
-          kick_url?: string | null
-          view_count?: number | null
-          description?: string | null
-          category?: string | null
-          game?: string | null
-          visibility?: string | null
-          display_order?: number
-          likes?: number
-          views?: number
+          admin_id?: string | null
+          action: string
+          entity: string
+          entity_id?: string | null
+          old_data?: Json | null
+          new_data?: Json | null
+          created_at?: string
         }
         Update: {
-          created_at?: string
-          created_by?: string | null
-          duration?: number
           id?: string
-          is_featured?: boolean | null
-          kick_clip_id?: string | null
-          thumbnail_url?: string
-          title?: string
-          updated_at?: string
-          video_url?: string | null
-          kick_url?: string | null
-          view_count?: number | null
-          description?: string | null
+          admin_id?: string | null
+          action?: string
+          entity?: string
+          entity_id?: string | null
+          old_data?: Json | null
+          new_data?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      setup_items: {
+        Row: {
+          id: string
+          title: string
+          slug: string
+          brand: string | null
+          category: string | null
+          description: string | null
+          storage_path: string | null
+          purchase_url: string | null
+          affiliate_url: string | null
+          price: number | null
+          currency: string
+          specifications: Json
+          display_order: number
+          is_featured: boolean
+          is_visible: boolean
+          is_archived: boolean
+          availability: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          slug: string
+          brand?: string | null
           category?: string | null
-          game?: string | null
-          visibility?: string | null
+          description?: string | null
+          storage_path?: string | null
+          purchase_url?: string | null
+          affiliate_url?: string | null
+          price?: number | null
+          currency?: string
+          specifications?: Json
           display_order?: number
-          likes?: number
-          views?: number
+          is_featured?: boolean
+          is_visible?: boolean
+          is_archived?: boolean
+          availability?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          slug?: string
+          brand?: string | null
+          category?: string | null
+          description?: string | null
+          storage_path?: string | null
+          purchase_url?: string | null
+          affiliate_url?: string | null
+          price?: number | null
+          currency?: string
+          specifications?: Json
+          display_order?: number
+          is_featured?: boolean
+          is_visible?: boolean
+          is_archived?: boolean
+          availability?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          value: Json
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          value: Json
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          value?: Json
+          updated_at?: string
         }
         Relationships: []
       }
@@ -396,7 +455,8 @@ export type Database = {
           id: string
           title: string
           description: string | null
-          image_url: string
+          storage_path: string | null
+          mime_type: string | null
           thumbnail_url: string | null
           category: string
           alt_text: string | null
@@ -405,7 +465,7 @@ export type Database = {
           height: number | null
           file_size: number | null
           is_featured: boolean
-          order_index: number
+          display_order: number
           usage_context: string
           created_at: string
           updated_at: string
@@ -414,7 +474,8 @@ export type Database = {
           id?: string
           title: string
           description?: string | null
-          image_url: string
+          storage_path?: string | null
+          mime_type?: string | null
           thumbnail_url?: string | null
           category?: string
           alt_text?: string | null
@@ -423,7 +484,7 @@ export type Database = {
           height?: number | null
           file_size?: number | null
           is_featured?: boolean
-          order_index?: number
+          display_order?: number
           usage_context?: string
           created_at?: string
           updated_at?: string
@@ -432,7 +493,8 @@ export type Database = {
           id?: string
           title?: string
           description?: string | null
-          image_url?: string
+          storage_path?: string | null
+          mime_type?: string | null
           thumbnail_url?: string | null
           category?: string
           alt_text?: string | null
@@ -441,7 +503,7 @@ export type Database = {
           height?: number | null
           file_size?: number | null
           is_featured?: boolean
-          order_index?: number
+          display_order?: number
           usage_context?: string
           created_at?: string
           updated_at?: string
@@ -717,53 +779,7 @@ export type Database = {
         }
         Relationships: []
       }
-      setup_items: {
-        Row: {
-          affiliate_url: string | null
-          brand: string
-          category_id: string
-          created_at: string
-          id: string
-          image_url: string | null
-          model: string
-          name: string
-          personal_note: string | null
-          updated_at: string
-        }
-        Insert: {
-          affiliate_url?: string | null
-          brand: string
-          category_id: string
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          model: string
-          name: string
-          personal_note?: string | null
-          updated_at?: string
-        }
-        Update: {
-          affiliate_url?: string | null
-          brand?: string
-          category_id?: string
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          model?: string
-          name?: string
-          personal_note?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "setup_items_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "setup_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+
       social_links: {
         Row: {
           created_at: string
@@ -817,39 +833,78 @@ export type Database = {
       }
       stream_history: {
         Row: {
-          average_viewers: number | null
-          created_at: string
-          ended_at: string
-          game_played: string
           id: string
           kick_stream_id: string
-          peak_viewers: number | null
-          started_at: string
+          external_stream_id: string | null
           title: string
+          slug: string | null
+          category: string
+          language: string
+          thumbnail: string | null
+          started_at: string
+          ended_at: string
+          duration_seconds: number
+          average_viewers: number | null
+          peak_viewers: number | null
+          total_views: number
+          followers_gained: number
+          status: string
+          vod_url: string | null
+          ended_reason: string | null
+          stream_snapshot: Json | null
+          snapshot_created_at: string | null
+          stream_number: number
+          created_at: string
           updated_at: string
         }
         Insert: {
-          average_viewers?: number | null
-          created_at?: string
-          ended_at: string
-          game_played: string
           id?: string
           kick_stream_id: string
-          peak_viewers?: number | null
-          started_at: string
+          external_stream_id?: string | null
           title: string
+          slug?: string | null
+          category: string
+          language?: string
+          thumbnail?: string | null
+          started_at: string
+          ended_at: string
+          duration_seconds?: number
+          average_viewers?: number | null
+          peak_viewers?: number | null
+          total_views?: number
+          followers_gained?: number
+          status?: string
+          vod_url?: string | null
+          ended_reason?: string | null
+          stream_snapshot?: Json | null
+          snapshot_created_at?: string | null
+          stream_number?: number
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          average_viewers?: number | null
-          created_at?: string
-          ended_at?: string
-          game_played?: string
           id?: string
           kick_stream_id?: string
-          peak_viewers?: number | null
-          started_at?: string
+          external_stream_id?: string | null
           title?: string
+          slug?: string | null
+          category?: string
+          language?: string
+          thumbnail?: string | null
+          started_at?: string
+          ended_at?: string
+          duration_seconds?: number
+          average_viewers?: number | null
+          peak_viewers?: number | null
+          total_views?: number
+          followers_gained?: number
+          status?: string
+          vod_url?: string | null
+          ended_reason?: string | null
+          stream_snapshot?: Json | null
+          snapshot_created_at?: string | null
+          stream_number?: number
+          created_at?: string
           updated_at?: string
         }
         Relationships: []
@@ -938,39 +993,7 @@ export type Database = {
           },
         ]
       }
-      timeline: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string
-          event_date: string
-          id: string
-          media_url: string | null
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description: string
-          event_date: string
-          id?: string
-          media_url?: string | null
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string
-          event_date?: string
-          id?: string
-          media_url?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+
       viewer_history: {
         Row: {
           created_at: string

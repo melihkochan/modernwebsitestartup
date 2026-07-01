@@ -26,10 +26,7 @@ export const queryKeys = {
     featured: () => [...queryKeys.gallery.all, "featured"] as const,
   },
 
-  timeline: {
-    all: ["timeline"] as const,
-    milestones: (year: string) => [...queryKeys.timeline.all, "milestones", year] as const,
-  },
+
   setup: {
     all: ["setup"] as const,
     products: (category: string) => [...queryKeys.setup.all, "products", category] as const,

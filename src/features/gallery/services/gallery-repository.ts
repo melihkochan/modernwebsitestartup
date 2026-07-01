@@ -1,28 +1,23 @@
 import { createClient } from "@/lib/supabase/client";
 import { RepositoryError } from "@/lib/errors";
+import { getStorageUrl } from "@/lib/supabase/storage";
 import type { GalleryItem } from "../validators/gallery-schemas";
-
-// ---------------------------------------------------------------------------
-// Repository Arayüzü
-// ---------------------------------------------------------------------------
 
 export interface GalleryRepository {
   getItems(category: string): Promise<GalleryItem[]>;
   getFeaturedItems(): Promise<GalleryItem[]>;
 }
 
-// ---------------------------------------------------------------------------
-// Supabase veri satırı → GalleryItem dönüşüm yardımcısı
-// ---------------------------------------------------------------------------
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToGalleryItem(row: Record<string, any>): GalleryItem {
+  const rawPath = row.storage_path || "";
+  const storagePath = rawPath.startsWith("gallery/") ? rawPath : `gallery/${rawPath}`;
   return {
     id: row.id,
     title: row.title,
     description: row.description ?? null,
-    imageUrl: row.image_url,
-    thumbnailUrl: row.thumbnail_url ?? null,
+    imageUrl: getStorageUrl(storagePath),
+    thumbnailUrl: row.thumbnail_url ? getStorageUrl(row.thumbnail_url) : null,
     category: row.category ?? "diger",
     altText: row.alt_text ?? null,
     steamAppId: row.steam_app_id ?? null,
@@ -30,15 +25,11 @@ function rowToGalleryItem(row: Record<string, any>): GalleryItem {
     height: row.height ?? null,
     fileSize: row.file_size ?? null,
     isFeatured: row.is_featured ?? false,
-    orderIndex: row.order_index ?? 0,
+    orderIndex: row.display_order ?? 0,
     usageContext: row.usage_context ?? "kullanilmiyor",
     createdAt: row.created_at,
   };
 }
-
-// ---------------------------------------------------------------------------
-// Supabase Implementasyonu — Tek gerçek kaynak
-// ---------------------------------------------------------------------------
 
 const supabaseGalleryRepository: GalleryRepository = {
   async getItems(category: string): Promise<GalleryItem[]> {
@@ -48,9 +39,9 @@ const supabaseGalleryRepository: GalleryRepository = {
       let query = supabase
         .from("gallery")
         .select(
-          "id, title, description, image_url, thumbnail_url, category, alt_text, steam_app_id, width, height, file_size, is_featured, order_index, usage_context, created_at"
+          "id, title, description, storage_path, thumbnail_url, category, alt_text, steam_app_id, width, height, file_size, is_featured, display_order, usage_context, created_at"
         )
-        .order("order_index", { ascending: true })
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: false });
 
       // "hepsi" veya "all" değilse kategori filtresi uygula
@@ -62,7 +53,7 @@ const supabaseGalleryRepository: GalleryRepository = {
 
       if (error) {
         throw new RepositoryError(
-          `[GalleryRepository] [gallery] [SELECT] [id, title, description, image_url, category, order_index] - ${error.message}`,
+          `[GalleryRepository] [gallery] [SELECT] [id, title, description, storage_path, category, display_order] - ${error.message}`,
           "FETCH_GALLERY_FAILED",
           error
         );
@@ -88,16 +79,16 @@ const supabaseGalleryRepository: GalleryRepository = {
       const { data, error } = await supabase
         .from("gallery")
         .select(
-          "id, title, description, image_url, thumbnail_url, category, alt_text, steam_app_id, width, height, file_size, is_featured, order_index, usage_context, created_at"
+          "id, title, description, storage_path, thumbnail_url, category, alt_text, steam_app_id, width, height, file_size, is_featured, display_order, usage_context, created_at"
         )
         .eq("is_featured", true)
-        .order("order_index", { ascending: true })
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: false })
         .limit(12);
 
       if (error) {
         throw new RepositoryError(
-          `[GalleryRepository] [gallery] [SELECT] [id, title, description, image_url, category, order_index, is_featured] - ${error.message}`,
+          `[GalleryRepository] [gallery] [SELECT] [id, title, description, storage_path, category, display_order, is_featured] - ${error.message}`,
           "FETCH_FEATURED_GALLERY_FAILED",
           error
         );
@@ -116,9 +107,5 @@ const supabaseGalleryRepository: GalleryRepository = {
     }
   },
 };
-
-// ---------------------------------------------------------------------------
-// Tekil Dışa Aktarma
-// ---------------------------------------------------------------------------
 
 export const galleryRepository: GalleryRepository = supabaseGalleryRepository;

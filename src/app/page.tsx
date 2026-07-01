@@ -4,9 +4,9 @@ import { NavbarLiveWrapper } from "@/components/layout/navbar-live-wrapper";
 import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "@/features/home/components/hero-section";
 import { LivePreviewSection } from "@/features/home/components/live-preview-section";
-import { AnalyticsPreviewSection } from "@/features/home/components/analytics-preview-section";
+import { RecentBroadcastsPreviewSection } from "@/features/home/components/recent-broadcasts-preview-section";
 import { CommunityPreviewSection } from "@/features/home/components/community-preview-section";
-import { TimelinePreviewSection } from "@/features/home/components/timeline-preview-section";
+
 import { SetupPreviewSection } from "@/features/home/components/setup-preview-section";
 import { GalleryPreviewSection } from "@/features/home/components/gallery-preview-section";
 import { FaqPreviewSection } from "@/features/home/components/faq-preview-section";
@@ -42,14 +42,13 @@ export default function HomePage() {
         {/* 2. Live Preview */}
         <LivePreviewSection />
 
-        {/* 3. Analytics */}
-        <AnalyticsPreviewSection />
+        {/* 3. Son Yayınlar */}
+        <RecentBroadcastsPreviewSection />
 
         {/* 5. Community */}
         <CommunityPreviewSection />
 
-        {/* 6. Timeline */}
-        <TimelinePreviewSection />
+
 
         {/* 7. Setup */}
         <SetupPreviewSection />

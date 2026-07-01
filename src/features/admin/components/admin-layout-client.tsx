@@ -15,6 +15,8 @@ import {
   X,
   LogOut,
   Images,
+  Package,
+  HelpCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -30,10 +32,12 @@ interface AdminSidebarItem {
 const SIDEBAR_ITEMS: AdminSidebarItem[] = [
   { label: "Genel Bakış", href: "/admin", icon: LayoutDashboard },
   { label: "Canlı Yayın", href: "/admin/live", icon: Sliders },
-  { label: "Yayın Geçmişi", href: "/admin/schedule", icon: Calendar },
-  { label: "Topluluk Oyun Önerileri", href: "/admin/suggestions", icon: ThumbsUp },
+  { label: "Yayın Geçmişi", href: "/admin/history", icon: Calendar },
+  { label: "Setup Ürünleri", href: "/admin/setup", icon: Package },
+  { label: "Oyun Önerileri", href: "/admin/suggestions", icon: ThumbsUp },
+  { label: "FAQ Yönetimi", href: "/admin/faq", icon: HelpCircle },
   { label: "Medya Kütüphanesi", href: "/admin/media", icon: Images },
-  { label: "Ayarlar", href: "/admin/settings", icon: Settings },
+  { label: "Site Ayarları", href: "/admin/settings", icon: Settings },
 ];
 
 export function AdminLayoutClient({ children }: { children: React.ReactNode }) {

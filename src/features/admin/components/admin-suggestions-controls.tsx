@@ -1,7 +1,7 @@
 "use client";
 
 import { useAdminSuggestions, useApproveSuggestion, useDeleteSuggestion } from "../hooks/use-admin";
-import { ThumbsUp, Check, Trash2, Calendar, Star, Tag, AlertCircle, RefreshCw, DollarSign } from "lucide-react";
+import { ThumbsUp, Check, Trash2, Calendar, Star, Tag, AlertCircle, RefreshCw, DollarSign, X } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 
@@ -54,15 +54,13 @@ export function AdminSuggestionsControls() {
           const statusColors =
             item.status === "approved"
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : item.status === "considering"
-              ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+              : item.status === "rejected"
+              ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
               : "bg-zinc-800/40 text-[var(--text-secondary)] border-zinc-800";
 
           const statusLabels = {
             pending: "Beklemede",
-            considering: "Düşünülüyor",
             approved: "Onaylandı",
-            played: "Oynandı",
             rejected: "Reddedildi",
           };
 
@@ -85,42 +83,40 @@ export function AdminSuggestionsControls() {
                   </div>
                 )}
                 
-                <div className="absolute top-3 right-3 flex gap-2">
-                  <Badge className={`border px-2 py-0.5 text-[9px] font-bold rounded-md ${statusColors}`}>
-                    {statusLabels[item.status] || item.status}
-                  </Badge>
-                </div>
               </div>
-
-              {/* Main Info */}
-              <div className="p-5 flex-1 flex flex-col justify-between relative overflow-hidden">
-                
-                {/* Standard view content */}
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex justify-between items-start gap-4">
-                    <h3 className="text-sm font-extrabold text-[var(--text-primary)] leading-tight line-clamp-1 group-hover:text-[var(--accent-primary)] transition-colors" style={{ fontFamily: "var(--font-outfit)" }}>
-                      {item.game}
-                    </h3>
-                  </div>
-
-                  {/* Metacritic & Release & Submitter stats */}
-                  <div className="flex items-center gap-3.5 text-[10px] text-[var(--text-tertiary)] flex-wrap">
-                    {details?.score && (
-                      <span className="flex items-center gap-1 font-bold text-emerald-400">
-                        <Star className="w-3.5 h-3.5 fill-current" />
-                        Metacritic: {details.score}
-                      </span>
-                    )}
-                    {details?.releaseDate && (
-                      <span className="flex items-center gap-1 font-mono">
-                        <Calendar className="w-3.5 h-3.5 text-zinc-500" />
-                        {details.releaseDate.split(" ").slice(-1)[0]}
-                      </span>
-                    )}
-                    <span className="font-semibold text-zinc-400">
-                      Öneren: @{item.submittedBy}
-                    </span>
-                  </div>
+ 
+               {/* Main Info */}
+               <div className="p-5 flex-1 flex flex-col justify-between relative overflow-hidden">
+                 
+                 {/* Standard view content */}
+                 <div className="flex flex-col gap-2.5">
+                   <div className="flex justify-between items-center gap-4">
+                     <h3 className="text-sm font-extrabold text-[var(--text-primary)] leading-tight line-clamp-1 group-hover:text-[var(--accent-primary)] transition-colors" style={{ fontFamily: "var(--font-outfit)" }}>
+                       {item.game}
+                     </h3>
+                     <Badge className={`border px-2 py-0.5 text-[9px] font-bold rounded-md shrink-0 ${statusColors}`}>
+                       {statusLabels[item.status] || item.status}
+                     </Badge>
+                   </div>
+ 
+                   {/* Metacritic & Release & Submitter stats */}
+                   <div className="flex items-center gap-3.5 text-[10px] text-[var(--text-tertiary)] flex-wrap">
+                     {details?.score && (
+                       <span className="flex items-center gap-1 font-bold text-emerald-400">
+                         <Star className="w-3.5 h-3.5 fill-current" />
+                         Metacritic: {details.score}
+                       </span>
+                     )}
+                     {details?.releaseDate && (
+                       <span className="flex items-center gap-1 font-mono">
+                         <Calendar className="w-3.5 h-3.5 text-zinc-500" />
+                         {details.releaseDate.split(" ").slice(-1)[0]}
+                       </span>
+                     )}
+                     <span className="font-semibold text-zinc-400">
+                       Öneren: @{item.submittedBy}
+                     </span>
+                   </div>
 
                   {/* Genres */}
                   {details?.genres && details.genres.length > 0 && (
@@ -144,12 +140,20 @@ export function AdminSuggestionsControls() {
                   {item.status === "pending" && (
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => approve(item.id)}
+                        onClick={() => approve({ id: item.id, status: "approved" })}
                         disabled={isApproving || isDeleting}
                         className="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-[var(--bg-base)] cursor-pointer transition-all disabled:opacity-50"
                         title="Öneriyi Onayla"
                       >
                         <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => approve({ id: item.id, status: "rejected" })}
+                        disabled={isApproving || isDeleting}
+                        className="p-1.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white cursor-pointer transition-all disabled:opacity-50"
+                        title="Öneriyi Reddet"
+                      >
+                        <X className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => remove(item.id)}
@@ -189,9 +193,47 @@ export function AdminSuggestionsControls() {
                       <Tag className="w-3.5 h-3.5 text-zinc-500" />
                       {details?.genres?.[0] || "PC / Konsol"}
                     </span>
-                    <span className="text-[10px] text-[var(--text-tertiary)] font-bold">
-                      {item.votes.toLocaleString()} Oy
-                    </span>
+                    {item.status === "pending" ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            approve({ id: item.id, status: "approved" });
+                          }}
+                          disabled={isApproving || isDeleting}
+                          className="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-[var(--bg-base)] cursor-pointer transition-all disabled:opacity-50"
+                          title="Öneriyi Onayla"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            approve({ id: item.id, status: "rejected" });
+                          }}
+                          disabled={isApproving || isDeleting}
+                          className="p-1.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white cursor-pointer transition-all disabled:opacity-50"
+                          title="Öneriyi Reddet"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            remove(item.id);
+                          }}
+                          disabled={isApproving || isDeleting}
+                          className="p-1.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white cursor-pointer transition-all disabled:opacity-50"
+                          title="Öneriyi Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-[var(--text-tertiary)] font-bold">
+                        {item.votes.toLocaleString()} Oy
+                      </span>
+                    )}
                   </div>
                 </div>
 

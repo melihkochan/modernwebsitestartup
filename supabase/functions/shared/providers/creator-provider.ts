@@ -19,6 +19,8 @@ export interface StreamState {
   viewerCount: number;
   startedAt: string | null; // ISO Date String
   thumbnailUrl: string | null;
+  externalId?: string | null;
+  language?: string | null;
 }
 
 export interface AnalyticsSnapshot {

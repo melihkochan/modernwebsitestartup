@@ -19,11 +19,12 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useCreatorStats, useTriggerCreatorSync } from "../hooks/use-admin";
+import { useCreatorStats, useTriggerCreatorSync, useActivityLogs } from "../hooks/use-admin";
 
 export function AdminDashboardClient() {
   const { data: stats, isLoading, isError } = useCreatorStats();
   const { mutate: triggerSync, isPending: isSyncing } = useTriggerCreatorSync();
+  const { data: logs = [] } = useActivityLogs();
 
   if (isLoading) {
     return (
@@ -86,9 +87,9 @@ export function AdminDashboardClient() {
 
         <GlassCard className="p-4.5 border border-[var(--border-default)] flex flex-col justify-between gap-1">
           <div>
-            <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Takipçi</span>
-            <span className={cn("font-mono mt-1 block", stats.totalFollowers !== null ? "text-lg font-extrabold text-[var(--text-primary)]" : "text-[11px] font-medium text-[var(--text-secondary)] leading-tight")}>
-              {stats.totalFollowers !== null ? stats.totalFollowers.toLocaleString() : "Takipçi verisi şu anda alınamıyor."}
+            <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Takipçiler</span>
+            <span className="text-lg font-extrabold text-[var(--text-primary)] font-mono mt-1 block">
+              {stats.lastSync?.updated_records !== undefined ? "Senkronize" : "N/A"}
             </span>
           </div>
           <div className="flex items-center gap-1 mt-2 text-[9px] text-[var(--text-tertiary)]">
@@ -181,6 +182,40 @@ export function AdminDashboardClient() {
             )}
           </GlassCard>
 
+          {/* Activity Log Dashboard Widget */}
+          <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-4">
+            <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[var(--accent-primary)]" />
+              Yönetici İşlem Günlüğü (Activity Log)
+            </h2>
+
+            {logs.length === 0 ? (
+              <div className="p-6 text-center text-xs text-[var(--text-tertiary)] border border-dashed border-[var(--border-default)] rounded-xl">
+                Henüz yapılmış yönetici işlemi kaydedilmemiş.
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+                <div className="max-h-72 overflow-y-auto divide-y divide-[var(--border-subtle)]">
+                  {logs.slice(0, 10).map((log) => (
+                    <div key={log.id} className="p-3 text-xs flex justify-between gap-4 hover:bg-[var(--bg-elevated)]/30 transition-colors">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-[var(--text-primary)]">
+                          {log.action}
+                        </span>
+                        <span className="text-[10px] text-[var(--text-tertiary)]">
+                          Tablo: <span className="font-mono text-[var(--text-secondary)]">{log.entity}</span> • {log.admin_username}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-[var(--text-tertiary)] shrink-0 font-mono">
+                        {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </GlassCard>
+
           {/* Quick Shortcuts */}
           <GlassCard className="p-6 border border-[var(--border-default)] flex flex-col gap-5">
             <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
@@ -202,13 +237,13 @@ export function AdminDashboardClient() {
                 </div>
               </Link>
 
-              <Link href="/admin/schedule">
+              <Link href="/admin/history">
                 <div className="p-4 bg-[var(--bg-overlay)] border border-[var(--border-default)] rounded-xl flex items-center justify-between group hover:border-[var(--accent-primary)]/40 transition-all cursor-pointer">
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-purple-400" />
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-[var(--text-primary)]">Yayın Geçmişi</span>
-                      <span className="text-[10px] text-[var(--text-tertiary)]">Tamamlanan eski yayınları listele</span>
+                      <span className="text-[10px] text-[var(--text-tertiary)]">Geçmiş yayınları listele ve düzenle</span>
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
@@ -234,7 +269,7 @@ export function AdminDashboardClient() {
                     <Settings className="w-5 h-5 text-blue-400" />
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-[var(--text-primary)]">Ayarlar</span>
-                      <span className="text-[10px] text-[var(--text-tertiary)]">Sistem ve Discord entegrasyonu</span>
+                      <span className="text-[10px] text-[var(--text-tertiary)]">Site genel ayarları ve SEO</span>
                     </div>
                   </div>
                   <ArrowRight className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
@@ -311,7 +346,6 @@ export function AdminDashboardClient() {
   );
 }
 
-// Fallback AlertCircle component
 function AlertCircle({ className }: { className?: string }) {
   return (
     <svg

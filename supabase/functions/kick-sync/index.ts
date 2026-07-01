@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
   logger.info(`Edge function: kick-sync triggered for channel '${KICK_CHANNEL_SLUG}'.`);
 
-  // Pre-load current sync metadata to preserve previous timestamps
+  // Pre-load current sync metadata
   let currentSyncMetadata: Record<string, unknown> | null = null;
   try {
     const { data } = await supabase
@@ -39,41 +39,35 @@ Deno.serve(async (req) => {
 
     const provider = new KickProvider(KICK_CLIENT_ID, KICK_CLIENT_SECRET);
 
-    // -------------------------------------------------------------------------
     // 1. Fetch current channel state from Kick API
-    // -------------------------------------------------------------------------
     const profile = await provider.getProfile(KICK_CHANNEL_SLUG);
     const streamState = await provider.getStreamState(KICK_CHANNEL_SLUG, profile.id);
 
     let updatedRecords = 0;
     const uniqueTables = new Set<string>();
 
-    // -------------------------------------------------------------------------
-    // 2. Read the PREVIOUS stream_state from DB before overwriting it.
-    //    This is critical for transition detection.
-    // -------------------------------------------------------------------------
+    // 2. Read the PREVIOUS stream_state from DB before overwriting
     let previousStreamState: {
       is_live: boolean;
       stream_title: string | null;
       current_game: string | null;
       started_at: string | null;
+      thumbnail_url: string | null;
     } | null = null;
 
     try {
       const { data: prevState } = await supabase
         .from("stream_state")
-        .select("is_live, stream_title, current_game, started_at")
+        .select("is_live, stream_title, current_game, started_at, thumbnail_url")
         .maybeSingle();
       if (prevState) {
         previousStreamState = prevState;
       }
     } catch (e) {
-      logger.warn("Failed to read previous stream_state for transition detection, continuing...", e);
+      logger.warn("Failed to read previous stream_state, continuing...", e);
     }
 
-    // -------------------------------------------------------------------------
-    // 3. Detect live → offline transition and create a stream_history record
-    // -------------------------------------------------------------------------
+    // 3. Detect live → offline transition and finalize stream history
     const streamJustEnded =
       previousStreamState?.is_live === true && streamState.isLive === false;
 
@@ -82,79 +76,211 @@ Deno.serve(async (req) => {
       const startedAt = previousStreamState.started_at;
       const kickStreamId = `${KICK_CHANNEL_SLUG}_${new Date(startedAt).getTime()}`;
 
-      logger.info(`Stream transition detected: live → offline. Recording stream history (kickStreamId: ${kickStreamId}).`);
+      logger.info(`Stream transition detected: live → offline. Finalizing stream history (kickStreamId: ${kickStreamId}).`);
 
       try {
-        // Aggregate peak and average viewers from viewer_history snapshots in this session
-        const { data: viewerRows } = await supabase
-          .from("viewer_history")
-          .select("viewers")
-          .gte("timestamp", startedAt)
-          .lte("timestamp", endedAt)
-          .is("stream_history_id", null); // Only unlinked rows from this session
-
-        let peakViewers = 0;
-        let averageViewers = 0;
-        if (viewerRows && viewerRows.length > 0) {
-          const counts = viewerRows.map((r) => r.viewers);
-          peakViewers = Math.max(...counts);
-          averageViewers = Math.round(counts.reduce((a, b) => a + b, 0) / counts.length);
-        }
-
-        // Insert the completed stream record (ignore conflict if already exists)
-        const { data: newStream, error: historyError } = await supabase
+        const { data: activeStream } = await supabase
           .from("stream_history")
-          .insert({
-            kick_stream_id: kickStreamId,
-            title: previousStreamState.stream_title || "İsimsiz Yayın",
-            game_played: previousStreamState.current_game || "Bilinmiyor",
-            started_at: startedAt,
-            ended_at: endedAt,
-            peak_viewers: peakViewers,
-            average_viewers: averageViewers,
-          })
-          .select("id")
-          .single();
+          .select("*")
+          .eq("kick_stream_id", kickStreamId)
+          .maybeSingle();
 
-        if (historyError) {
-          logger.warn(`Failed to insert stream_history record: ${historyError.message}`);
-        } else if (newStream?.id) {
-          updatedRecords++;
-          uniqueTables.add("stream_history");
+        const durationSeconds = Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000);
 
-          // Backfill viewer_history rows to link them to the completed stream
-          const { error: backfillError } = await supabase
+        if (activeStream) {
+          const { data: viewerRows } = await supabase
             .from("viewer_history")
-            .update({ stream_history_id: newStream.id })
+            .select("viewers")
+            .gte("timestamp", startedAt)
+            .lte("timestamp", endedAt)
+            .eq("stream_history_id", activeStream.id);
+
+          const { data: unlinkedRows } = await supabase
+            .from("viewer_history")
+            .select("viewers")
             .gte("timestamp", startedAt)
             .lte("timestamp", endedAt)
             .is("stream_history_id", null);
 
-          if (backfillError) {
-            logger.warn(`Failed to backfill viewer_history.stream_history_id: ${backfillError.message}`);
-          } else {
-            logger.info(`Backfilled viewer_history rows with stream_history_id: ${newStream.id}`);
+          const allViewerRows = [...(viewerRows || []), ...(unlinkedRows || [])];
+          let peakViewers = activeStream.peak_viewers || 0;
+          let averageViewers = activeStream.average_viewers || 0;
+          if (allViewerRows && allViewerRows.length > 0) {
+            const counts = allViewerRows.map((r) => r.viewers);
+            peakViewers = Math.max(...counts);
+            averageViewers = Math.round(counts.reduce((a, b) => a + b, 0) / counts.length);
           }
+
+          await supabase
+            .from("stream_history")
+            .update({
+              ended_at: endedAt,
+              duration_seconds: durationSeconds,
+              peak_viewers: peakViewers,
+              average_viewers: averageViewers,
+              status: "ended",
+              ended_reason: "manual",
+              stream_snapshot: streamState as any,
+              snapshot_created_at: new Date().toISOString(),
+            })
+            .eq("id", activeStream.id);
+
+          if (unlinkedRows && unlinkedRows.length > 0) {
+            await supabase
+              .from("viewer_history")
+              .update({ stream_history_id: activeStream.id })
+              .gte("timestamp", startedAt)
+              .lte("timestamp", endedAt)
+              .is("stream_history_id", null);
+          }
+        } else {
+          // Fallback insert if record was missed
+          const { data: maxRow } = await supabase
+            .from("stream_history")
+            .select("stream_number")
+            .order("stream_number", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const nextStreamNumber = (maxRow?.stream_number || 0) + 1;
+          const slug = `${KICK_CHANNEL_SLUG}-yayin-${nextStreamNumber}`;
+
+          await supabase
+            .from("stream_history")
+            .insert({
+              kick_stream_id: kickStreamId,
+              external_stream_id: streamState.externalId || kickStreamId,
+              title: previousStreamState.stream_title || "İsimsiz Yayın",
+              slug: slug,
+              category: previousStreamState.current_game || "Bilinmiyor",
+              started_at: startedAt,
+              ended_at: endedAt,
+              duration_seconds: durationSeconds,
+              peak_viewers: 0,
+              average_viewers: 0,
+              total_views: 0,
+              followers_gained: 0,
+              status: "ended",
+              ended_reason: "manual",
+              stream_snapshot: streamState as any,
+              snapshot_created_at: new Date().toISOString(),
+              stream_number: nextStreamNumber,
+            });
         }
+        updatedRecords++;
+        uniqueTables.add("stream_history");
       } catch (transitionErr) {
-        logger.error("Error during stream transition processing, continuing...", transitionErr);
+        logger.error("Error during stream transition processing", transitionErr);
       }
     }
 
-    // -------------------------------------------------------------------------
-    // 4. Write current stream_state to DB (Offline fallbacks)
-    // -------------------------------------------------------------------------
+    // 4. If currently LIVE, insert or update stream_history record
+    let activeStreamDbId: string | null = null;
+    if (streamState.isLive && streamState.startedAt) {
+      const kickStreamId = `${KICK_CHANNEL_SLUG}_${new Date(streamState.startedAt).getTime()}`;
+      try {
+        const { data: existingStream } = await supabase
+          .from("stream_history")
+          .select("id, stream_number, peak_viewers, average_viewers, started_at, total_views")
+          .eq("kick_stream_id", kickStreamId)
+          .maybeSingle();
+
+        if (!existingStream) {
+          const { data: maxRow } = await supabase
+            .from("stream_history")
+            .select("stream_number")
+            .order("stream_number", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const nextStreamNumber = (maxRow?.stream_number || 0) + 1;
+          const slug = `${KICK_CHANNEL_SLUG}-yayin-${nextStreamNumber}`;
+
+          const { data: insertedStream } = await supabase
+            .from("stream_history")
+            .insert({
+              kick_stream_id: kickStreamId,
+              external_stream_id: streamState.externalId || kickStreamId,
+              title: streamState.title || "İsimsiz Yayın",
+              slug: slug,
+              category: streamState.category || "Bilinmiyor",
+              language: streamState.language || "tr",
+              thumbnail: streamState.thumbnailUrl,
+              started_at: streamState.startedAt,
+              ended_at: new Date().toISOString(),
+              duration_seconds: 0,
+              peak_viewers: streamState.viewerCount,
+              average_viewers: streamState.viewerCount,
+              total_views: streamState.viewerCount,
+              status: "live",
+              stream_snapshot: streamState as any,
+              snapshot_created_at: new Date().toISOString(),
+              stream_number: nextStreamNumber,
+            })
+            .select("id")
+            .single();
+          if (insertedStream) {
+            activeStreamDbId = insertedStream.id;
+          }
+        } else {
+          activeStreamDbId = existingStream.id;
+          const durationSeconds = Math.round((Date.now() - new Date(existingStream.started_at).getTime()) / 1000);
+
+          const { data: viewerRows } = await supabase
+            .from("viewer_history")
+            .select("viewers")
+            .gte("timestamp", existingStream.started_at)
+            .eq("stream_history_id", existingStream.id);
+
+          const { data: unlinkedRows } = await supabase
+            .from("viewer_history")
+            .select("viewers")
+            .gte("timestamp", existingStream.started_at)
+            .is("stream_history_id", null);
+
+          const allViewerRows = [...(viewerRows || []), ...(unlinkedRows || [])];
+          let peakViewers = existingStream.peak_viewers || streamState.viewerCount;
+          let averageViewers = existingStream.average_viewers || streamState.viewerCount;
+          if (allViewerRows.length > 0) {
+            const counts = allViewerRows.map((r) => r.viewers);
+            peakViewers = Math.max(...counts, streamState.viewerCount);
+            averageViewers = Math.round(counts.reduce((a, b) => a + b, 0) / counts.length);
+          }
+
+          await supabase
+            .from("stream_history")
+            .update({
+              title: streamState.title || "İsimsiz Yayın",
+              category: streamState.category || "Bilinmiyor",
+              thumbnail: streamState.thumbnailUrl,
+              ended_at: new Date().toISOString(),
+              duration_seconds: durationSeconds,
+              peak_viewers: peakViewers,
+              average_viewers: averageViewers,
+              total_views: Math.max(existingStream.total_views || 0, streamState.viewerCount),
+              status: "live",
+              stream_snapshot: streamState as any,
+              snapshot_created_at: new Date().toISOString(),
+            })
+            .eq("id", existingStream.id);
+        }
+        updatedRecords++;
+        uniqueTables.add("stream_history");
+      } catch (liveErr) {
+        logger.error("Error updating live stream_history", liveErr);
+      }
+    }
+
+    // 5. Write current stream_state to DB
     let offlineCoverUrl: string | null = null;
     try {
       const { data: assetData } = await supabase
         .from("site_assets")
-        .select("offline_cover_url")
+        .select("logo_url") // use logo_url or logo as placeholder if needed
         .maybeSingle();
       if (assetData) {
-        offlineCoverUrl = assetData.offline_cover_url;
+        offlineCoverUrl = null; // default to null or layout fallback
       }
     } catch (e) {
-      logger.warn(`Failed to fetch offline_cover_url: ${e instanceof Error ? e.message : String(e)}`);
+      logger.warn(`Failed to fetch site_assets: ${e instanceof Error ? e.message : String(e)}`);
     }
 
     const { error: stateError } = await supabase
@@ -174,28 +300,36 @@ Deno.serve(async (req) => {
     updatedRecords++;
     uniqueTables.add("stream_state");
 
-    // -------------------------------------------------------------------------
-    // 5. If live, insert a viewer_history snapshot (real data only, no fake bitrate)
-    // -------------------------------------------------------------------------
+    // 6. If live, insert a viewer_history snapshot linked to stream_history
     if (streamState.isLive) {
       const { error: viewerError } = await supabase
         .from("viewer_history")
         .insert({
           viewers: streamState.viewerCount,
           timestamp: new Date().toISOString(),
-          // stream_history_id is intentionally null here — it will be backfilled on stream end
+          stream_history_id: activeStreamDbId,
         });
       if (viewerError) {
-        logger.warn("Failed to log viewer_history snapshot, continuing...", viewerError);
+        logger.warn("Failed to log viewer_history snapshot", viewerError);
       } else {
         updatedRecords++;
         uniqueTables.add("viewer_history");
       }
+
+      // Record a live snapshot metadata for analytics
+      try {
+        await supabase.from("live_snapshots").insert({
+          stream_id: activeStreamDbId,
+          viewer_count: streamState.viewerCount,
+          bitrate: 0,
+          snapshot_time: new Date().toISOString(),
+        });
+      } catch (_snapshotErr) {
+        // optional table
+      }
     }
 
-    // -------------------------------------------------------------------------
-    // 6. Subscriber history: write official subscriber count if available
-    // -------------------------------------------------------------------------
+    // 7. Subscriber history
     if (profile.subscriberCount !== null && profile.subscriberCount !== undefined) {
       let lastSubCount = 0;
       try {
@@ -222,18 +356,9 @@ Deno.serve(async (req) => {
         updatedRecords++;
         uniqueTables.add("subscriber_history");
       }
-    } else {
-      logger.info("Kick API did not return subscriber count. Skipping subscriber_history insert.");
     }
 
-    // NOTE: follower_history writes are intentionally REMOVED.
-    // Kick's public API does not return follower_count via client credentials.
-    // Writing null or a fallback to follower_history would be misleading.
-    // Follower data will be displayed as unavailable in the UI.
-
-    // -------------------------------------------------------------------------
-    // 7. Daily analytics aggregation
-    // -------------------------------------------------------------------------
+    // 8. Daily analytics aggregation
     const todayStr = new Date().toISOString().split("T")[0];
     try {
       const { data: currentAnalytics } = await supabase
@@ -253,7 +378,6 @@ Deno.serve(async (req) => {
           .update({ peak_viewers: peakViewers, average_viewers: averageViewers })
           .eq("date", todayStr);
       } else if (streamState.isLive) {
-        // Only create a daily row when a stream is actually running
         await supabase
           .from("analytics_daily")
           .insert({
@@ -267,12 +391,10 @@ Deno.serve(async (req) => {
       updatedRecords++;
       uniqueTables.add("analytics_daily");
     } catch (e) {
-      logger.warn("Failed to aggregate daily analytics, continuing...", e);
+      logger.warn("Failed to aggregate daily analytics", e);
     }
 
-    // -------------------------------------------------------------------------
-    // 8. Write sync status to settings
-    // -------------------------------------------------------------------------
+    // 9. Write sync status to settings
     const durationMs = Date.now() - startTime;
     const syncMetadata = {
       status: "success",
@@ -291,7 +413,7 @@ Deno.serve(async (req) => {
       .from("settings")
       .upsert({ key: "kick_sync_status", value: syncMetadata });
 
-    logger.info(`kick-sync completed in ${durationMs}ms. Updated ${updatedRecords} records across ${uniqueTables.size} tables.`);
+    logger.info(`kick-sync completed in ${durationMs}ms. Updated ${updatedRecords} records.`);
 
     return new Response(
       JSON.stringify({ success: true, message: "kick-sync executed successfully", data: syncMetadata }),
@@ -318,7 +440,7 @@ Deno.serve(async (req) => {
       };
       await supabase.from("settings").upsert({ key: "kick_sync_status", value: failMetadata });
     } catch (dbErr) {
-      logger.error("Double fault: failed to write error status to settings table", dbErr);
+      logger.error("Failed to write fail status to settings table", dbErr);
     }
 
     return handleError(error);

@@ -21,7 +21,7 @@ export interface AdminSuggestion {
   votes: number;
   submittedBy: string;
   adminNote: string;
-  status: "pending" | "considering" | "approved" | "played" | "rejected";
+  status: "pending" | "approved" | "rejected";
   steamAppId: number | null;
   platform?: string | null;
   coverImageUrl?: string | null;
@@ -40,12 +40,18 @@ export interface AdminSuggestion {
 export interface AdminStreamHistory {
   id: string;
   title: string;
-  gamePlayed: string;
+  category: string;
   startedAt: string;
   endedAt: string;
-  durationMinutes: number;
+  durationSeconds: number;
   peakViewers: number;
   averageViewers: number;
+  totalViews: number;
+  followersGained: number;
+  status: "scheduled" | "live" | "ended" | "cancelled";
+  vodUrl: string | null;
+  endedReason: string | null;
+  streamNumber: number;
 }
 
 export interface CreatorStats {
@@ -71,17 +77,68 @@ export interface CreatorStats {
   } | null;
 }
 
-export interface AdminRepository {
-  getSuggestions(): Promise<AdminSuggestion[]>;
-  approveSuggestion(id: string): Promise<void>;
-  deleteSuggestion(id: string): Promise<void>;
-  getStreamHistory(): Promise<AdminStreamHistory[]>;
-  getSyncStatus(): Promise<CreatorSyncStatus | null>;
-  triggerSync(): Promise<CreatorSyncStatus | null>;
-  getCreatorStats(): Promise<CreatorStats>;
+export interface AdminActivityLog {
+  id: string;
+  admin_id: string | null;
+  admin_username?: string;
+  action: string;
+  entity: string;
+  entity_id: string | null;
+  old_data: any;
+  new_data: any;
+  created_at: string;
 }
 
-export const adminRepository: AdminRepository = {
+export const adminRepository = {
+  // Activity Logging helper
+  async logActivity(action: string, entity: string, entityId: string | null, oldData: any = null, newData: any = null): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("admin_activity_logs").insert({
+        admin_id: user?.id || null,
+        action,
+        entity,
+        entity_id: entityId,
+        old_data: oldData,
+        new_data: newData,
+      });
+    } catch (err) {
+      console.warn("Failed to write activity log:", err);
+    }
+  },
+
+  async getActivityLogs(): Promise<AdminActivityLog[]> {
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase
+        .from("admin_activity_logs")
+        .select(`
+          *,
+          profiles:admin_id (
+            username
+          )
+        `)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return (data || []).map((d) => ({
+        id: d.id,
+        admin_id: d.admin_id,
+        admin_username: (d as any).profiles?.username || "Anonim Admin",
+        action: d.action,
+        entity: d.entity,
+        entity_id: d.entity_id,
+        old_data: d.old_data,
+        new_data: d.new_data,
+        created_at: d.created_at,
+      }));
+    } catch (err) {
+      throw new RepositoryError("Failed to fetch activity logs", "FETCH_LOGS_FAILED", err);
+    }
+  },
+
   async getSuggestions(): Promise<AdminSuggestion[]> {
     const supabase = createClient();
     try {
@@ -95,13 +152,7 @@ export const adminRepository: AdminRepository = {
         `)
         .order("votes_count", { ascending: false });
 
-      if (error) {
-        throw new RepositoryError(
-          `[AdminRepository] [game_suggestions] [SELECT] [id, game_title, votes_count, suggested_by, admin_note, status, steam_appid, platform, cover_image_url] - ${error.message}`,
-          "FETCH_SUGGESTIONS_FAILED",
-          error
-        );
-      }
+      if (error) throw error;
       if (!data) return [];
 
       const suggestions = await Promise.all(
@@ -125,11 +176,11 @@ export const adminRepository: AdminRepository = {
 
           return {
             id: d.id,
-            game: d.game_title,
-            votes: d.votes_count,
-            submittedBy: (d.profiles as { username?: string })?.username || "Anonim",
+            game: d.game_title || "",
+            votes: d.votes_count ?? 0,
+            submittedBy: (d as any).profiles?.username || "Anonim",
             adminNote: d.admin_note || "",
-            status: d.status as AdminSuggestion["status"],
+            status: (d.status || "pending") as AdminSuggestion["status"],
             steamAppId: d.steam_appid,
             platform: d.platform || "PC",
             coverImageUrl: d.cover_image_url,
@@ -140,63 +191,55 @@ export const adminRepository: AdminRepository = {
 
       return suggestions;
     } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[AdminRepository] [game_suggestions] [SELECT] - Failed to load admin suggestions`,
-        "FETCH_SUGGESTIONS_FAILED",
-        err
-      );
+      throw new RepositoryError("Failed to load admin suggestions", "FETCH_SUGGESTIONS_FAILED", err);
     }
   },
 
-  async approveSuggestion(id: string): Promise<void> {
+  async updateSuggestionStatus(id: string, status: "pending" | "approved" | "rejected"): Promise<void> {
     const supabase = createClient();
     try {
+      const { data: oldData } = await supabase.from("game_suggestions").select("status").eq("id", id).maybeSingle();
       const { error } = await supabase
         .from("game_suggestions")
-        .update({ status: "approved" })
+        .update({ status })
         .eq("id", id);
-      if (error) {
-        throw new RepositoryError(
-          `[AdminRepository] [game_suggestions] [UPDATE] [status:approved] [id:${id}] - ${error.message}`,
-          "APPROVE_SUGGESTION_FAILED",
-          error
-        );
-      }
-    } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[AdminRepository] [game_suggestions] [UPDATE] - Failed to approve game suggestion`,
-        "APPROVE_SUGGESTION_FAILED",
-        err
+      if (error) throw error;
+
+      await this.logActivity(
+        `Oyun Önerisi Durumu Güncellendi: ${status.toUpperCase()}`,
+        "game_suggestions",
+        id,
+        oldData,
+        { status }
       );
+    } catch (err) {
+      throw new RepositoryError("Failed to update suggestion status", "UPDATE_SUGGESTION_FAILED", err);
     }
   },
 
   async deleteSuggestion(id: string): Promise<void> {
     const supabase = createClient();
     try {
+      const { data: oldData } = await supabase.from("game_suggestions").select("*").eq("id", id).maybeSingle();
       const { error } = await supabase
         .from("game_suggestions")
         .delete()
         .eq("id", id);
-      if (error) {
-        throw new RepositoryError(
-          `[AdminRepository] [game_suggestions] [DELETE] [id:${id}] - ${error.message}`,
-          "DELETE_SUGGESTION_FAILED",
-          error
-        );
-      }
-    } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[AdminRepository] [game_suggestions] [DELETE] - Failed to delete game suggestion`,
-        "DELETE_SUGGESTION_FAILED",
-        err
+      if (error) throw error;
+
+      await this.logActivity(
+        "Oyun Önerisi Silindi",
+        "game_suggestions",
+        id,
+        oldData,
+        null
       );
+    } catch (err) {
+      throw new RepositoryError("Failed to delete suggestion", "DELETE_SUGGESTION_FAILED", err);
     }
   },
 
+  // Stream History Management
   async getStreamHistory(): Promise<AdminStreamHistory[]> {
     const supabase = createClient();
     try {
@@ -205,41 +248,81 @@ export const adminRepository: AdminRepository = {
         .select("*")
         .order("started_at", { ascending: false });
 
-      if (error) {
-        throw new RepositoryError(
-          `[AdminRepository] [stream_history] [SELECT] [*] - ${error.message}`,
-          "FETCH_STREAM_HISTORY_FAILED",
-          error
-        );
-      }
-
-      if (!data || data.length === 0) return [];
-
-      return data.map((d) => {
-        const start = new Date(d.started_at);
-        const end = new Date(d.ended_at);
-        const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
-        return {
-          id: d.id,
-          title: d.title,
-          gamePlayed: d.game_played,
-          startedAt: d.started_at,
-          endedAt: d.ended_at,
-          durationMinutes,
-          peakViewers: d.peak_viewers ?? 0,
-          averageViewers: d.average_viewers ?? 0,
-        };
-      });
+      if (error) throw error;
+      return (data || []).map((d) => ({
+        id: d.id,
+        title: d.title,
+        category: d.category,
+        startedAt: d.started_at,
+        endedAt: d.ended_at,
+        durationSeconds: d.duration_seconds ?? 0,
+        peakViewers: d.peak_viewers ?? 0,
+        averageViewers: d.average_viewers ?? 0,
+        totalViews: d.total_views ?? 0,
+        followersGained: d.followers_gained ?? 0,
+        status: (d.status || "ended") as AdminStreamHistory["status"],
+        vodUrl: d.vod_url,
+        endedReason: d.ended_reason,
+        streamNumber: d.stream_number ?? 0,
+      }));
     } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[AdminRepository] [stream_history] [SELECT] - Failed to retrieve stream history`,
-        "FETCH_STREAM_HISTORY_FAILED",
-        err
-      );
+      throw new RepositoryError("Failed to retrieve stream history", "FETCH_STREAM_HISTORY_FAILED", err);
     }
   },
 
+  async updateStreamHistory(id: string, fields: Partial<AdminStreamHistory>): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: oldData } = await supabase.from("stream_history").select("*").eq("id", id).maybeSingle();
+      
+      const payload: any = {};
+      if (fields.title !== undefined) payload.title = fields.title;
+      if (fields.category !== undefined) payload.category = fields.category;
+      if (fields.status !== undefined) payload.status = fields.status;
+      if (fields.vodUrl !== undefined) payload.vod_url = fields.vodUrl;
+
+      const { error } = await supabase
+        .from("stream_history")
+        .update(payload)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      await this.logActivity(
+        "Yayın Geçmişi Güncellendi",
+        "stream_history",
+        id,
+        oldData,
+        payload
+      );
+    } catch (err) {
+      throw new RepositoryError("Failed to update stream history", "UPDATE_STREAM_HISTORY_FAILED", err);
+    }
+  },
+
+  async deleteStreamHistory(id: string): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: oldData } = await supabase.from("stream_history").select("*").eq("id", id).maybeSingle();
+      const { error } = await supabase
+        .from("stream_history")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+
+      await this.logActivity(
+        "Yayın Geçmişi Silindi",
+        "stream_history",
+        id,
+        oldData,
+        null
+      );
+    } catch (err) {
+      throw new RepositoryError("Failed to delete stream history", "DELETE_STREAM_HISTORY_FAILED", err);
+    }
+  },
+
+  // Sync Controls
   async getSyncStatus(): Promise<CreatorSyncStatus | null> {
     const supabase = createClient();
     try {
@@ -249,22 +332,11 @@ export const adminRepository: AdminRepository = {
         .eq("key", "kick_sync_status")
         .maybeSingle();
 
-      if (error) {
-        throw new RepositoryError(
-          `[AdminRepository] [settings] [SELECT] [value] [key:kick_sync_status] - ${error.message}`,
-          "FETCH_SYNC_STATUS_FAILED",
-          error
-        );
-      }
+      if (error) throw error;
       if (!data) return null;
       return data.value as unknown as CreatorSyncStatus;
     } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[AdminRepository] [settings] [SELECT] - Failed to retrieve sync status metadata`,
-        "FETCH_SYNC_STATUS_FAILED",
-        err
-      );
+      throw new RepositoryError("Failed to retrieve sync status metadata", "FETCH_SYNC_STATUS_FAILED", err);
     }
   },
 
@@ -272,21 +344,10 @@ export const adminRepository: AdminRepository = {
     const supabase = createClient();
     try {
       const { error } = await supabase.functions.invoke("kick-sync", { method: "POST" });
-      if (error) {
-        throw new RepositoryError(
-          `[AdminRepository] [functions.invoke:kick-sync] [POST] - ${error.message}`,
-          "TRIGGER_SYNC_FAILED",
-          error
-        );
-      }
+      if (error) throw error;
       return this.getSyncStatus();
     } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[AdminRepository] [functions.invoke] - Failed to trigger Kick sync function`,
-        "TRIGGER_SYNC_FAILED",
-        err
-      );
+      throw new RepositoryError("Failed to trigger Kick sync function", "TRIGGER_SYNC_FAILED", err);
     }
   },
 
@@ -298,13 +359,7 @@ export const adminRepository: AdminRepository = {
         .select("*")
         .maybeSingle();
 
-      if (stateError) {
-        throw new RepositoryError(
-          `[AdminRepository] [stream_state] [SELECT] [*] - ${stateError.message}`,
-          "FETCH_CREATOR_STATS_FAILED",
-          stateError
-        );
-      }
+      if (stateError) throw stateError;
 
       const { data: subData, error: subError } = await supabase
         .from("subscriber_history")
@@ -313,26 +368,14 @@ export const adminRepository: AdminRepository = {
         .limit(1)
         .maybeSingle();
 
-      if (subError) {
-        throw new RepositoryError(
-          `[AdminRepository] [subscriber_history] [SELECT] [active_count] - ${subError.message}`,
-          "FETCH_CREATOR_STATS_FAILED",
-          subError
-        );
-      }
+      if (subError) throw subError;
 
       const { data: history, error: historyError } = await supabase
         .from("stream_history")
-        .select("peak_viewers, average_viewers, title, game_played, started_at, ended_at")
+        .select("peak_viewers, average_viewers, title, category, started_at, ended_at")
         .order("started_at", { ascending: false });
 
-      if (historyError) {
-        throw new RepositoryError(
-          `[AdminRepository] [stream_history] [SELECT] [peak_viewers, average_viewers, title] - ${historyError.message}`,
-          "FETCH_CREATOR_STATS_FAILED",
-          historyError
-        );
-      }
+      if (historyError) throw historyError;
 
       const syncStatus = await this.getSyncStatus();
 
@@ -354,7 +397,7 @@ export const adminRepository: AdminRepository = {
         const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
         recentStream = {
           title: last.title,
-          game: last.game_played,
+          game: last.category,
           durationMinutes,
           date: new Date(last.started_at).toLocaleDateString("tr-TR"),
         };
@@ -380,12 +423,150 @@ export const adminRepository: AdminRepository = {
         recentStream,
       };
     } catch (err) {
-      if (err instanceof RepositoryError) throw err;
-      throw new RepositoryError(
-        `[AdminRepository] [stream_state] [SELECT] - Failed to load creator dashboard statistics`,
-        "FETCH_CREATOR_STATS_FAILED",
-        err
+      throw new RepositoryError("Failed to load creator statistics", "FETCH_CREATOR_STATS_FAILED", err);
+    }
+  },
+
+  // Site Settings Management
+  async getSiteSettings(): Promise<Record<string, any>> {
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase.from("site_settings").select("*");
+      if (error) throw error;
+      const settings: Record<string, any> = {};
+      (data || []).forEach((row) => {
+        settings[row.key] = row.value;
+      });
+      return settings;
+    } catch (err) {
+      throw new RepositoryError("Failed to load site settings", "FETCH_SETTINGS_FAILED", err);
+    }
+  },
+
+  async updateSiteSetting(key: string, value: any): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: oldData } = await supabase.from("site_settings").select("value").eq("key", key).maybeSingle();
+      const { error } = await supabase
+        .from("site_settings")
+        .upsert({ key, value, updated_at: new Date().toISOString() });
+      if (error) throw error;
+
+      await this.logActivity(
+        `Site Ayarları Güncellendi: ${key.toUpperCase()}`,
+        "site_settings",
+        key,
+        oldData?.value,
+        value
       );
+    } catch (err) {
+      throw new RepositoryError("Failed to update site setting", "UPDATE_SETTING_FAILED", err);
+    }
+  },
+
+  // Setup Items Management (CRUD)
+  async getSetupItems(): Promise<any[]> {
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase
+        .from("setup_items")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      throw new RepositoryError("Failed to list setup items", "FETCH_SETUP_FAILED", err);
+    }
+  },
+
+  async createSetupItem(item: any): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { error } = await supabase.from("setup_items").insert(item);
+      if (error) throw error;
+      await this.logActivity("Setup Ürünü Eklendi", "setup_items", item.slug, null, item);
+    } catch (err) {
+      throw new RepositoryError("Failed to create setup item", "CREATE_SETUP_FAILED", err);
+    }
+  },
+
+  async updateSetupItem(id: string, item: any): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: oldData } = await supabase.from("setup_items").select("*").eq("id", id).maybeSingle();
+      const { error } = await supabase
+        .from("setup_items")
+        .update({ ...item, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+      await this.logActivity("Setup Ürünü Güncellendi", "setup_items", id, oldData, item);
+    } catch (err) {
+      throw new RepositoryError("Failed to update setup item", "UPDATE_SETUP_FAILED", err);
+    }
+  },
+
+  async deleteSetupItem(id: string): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: oldData } = await supabase.from("setup_items").select("*").eq("id", id).maybeSingle();
+      const { error } = await supabase.from("setup_items").delete().eq("id", id);
+      if (error) throw error;
+      await this.logActivity("Setup Ürünü Silindi", "setup_items", id, oldData, null);
+    } catch (err) {
+      throw new RepositoryError("Failed to delete setup item", "DELETE_SETUP_FAILED", err);
+    }
+  },
+
+  // FAQ CRUD
+  async getFaqs(): Promise<any[]> {
+    const supabase = createClient();
+    try {
+      const { data, error } = await supabase
+        .from("faq")
+        .select("*")
+        .order("order_weight", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      throw new RepositoryError("Failed to fetch FAQs", "FETCH_FAQ_FAILED", err);
+    }
+  },
+
+  async createFaq(faq: any): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { error } = await supabase.from("faq").insert(faq);
+      if (error) throw error;
+      await this.logActivity("FAQ Soru Eklendi", "faq", null, null, faq);
+    } catch (err) {
+      throw new RepositoryError("Failed to create FAQ", "CREATE_FAQ_FAILED", err);
+    }
+  },
+
+  async updateFaq(id: string, faq: any): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: oldData } = await supabase.from("faq").select("*").eq("id", id).maybeSingle();
+      const { error } = await supabase
+        .from("faq")
+        .update({ ...faq, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+      await this.logActivity("FAQ Soru Güncellendi", "faq", id, oldData, faq);
+    } catch (err) {
+      throw new RepositoryError("Failed to update FAQ", "UPDATE_FAQ_FAILED", err);
+    }
+  },
+
+  async deleteFaq(id: string): Promise<void> {
+    const supabase = createClient();
+    try {
+      const { data: oldData } = await supabase.from("faq").select("*").eq("id", id).maybeSingle();
+      const { error } = await supabase.from("faq").delete().eq("id", id);
+      if (error) throw error;
+      await this.logActivity("FAQ Soru Silindi", "faq", id, oldData, null);
+    } catch (err) {
+      throw new RepositoryError("Failed to delete FAQ", "DELETE_FAQ_FAILED", err);
     }
   },
 };

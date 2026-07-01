@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { NavbarLiveWrapper } from "@/components/layout/navbar-live-wrapper";
 import { Footer } from "@/components/layout/footer";
-import { AnalyticsPageClient } from "@/features/analytics/components/analytics-page-client";
+import { BroadcastsPageClient } from "@/features/broadcasts/components/broadcasts-page-client";
 
 export const metadata: Metadata = {
-  title: "Stream Analytics",
-  description: "Explore the growth stats and streaming history of Zehragn on Kick — viewer trends, followers and streaming hours.",
+  title: "Geçmiş Yayınlar",
+  description: "Melih Koçhan'ın gerçekleştirdiği tüm yayınların veritabanı kayıtları ve detaylı izleyici istatistikleri.",
 };
 
 export default function AnalyticsPage() {
@@ -13,7 +13,7 @@ export default function AnalyticsPage() {
     <>
       <NavbarLiveWrapper />
       <main id="main-content">
-        <AnalyticsPageClient />
+        <BroadcastsPageClient />
       </main>
       <Footer />
     </>

@@ -24,13 +24,12 @@ export const siteConfig = {
   },
   /** Navigation items for the global header */
   nav: [
-    { label: "Live", href: "/live" },
-    { label: "Analytics", href: "/analytics" },
-    { label: "Community", href: "/community" },
-    { label: "Gallery", href: "/gallery" },
-    { label: "Timeline", href: "/timeline" },
-    { label: "Setup", href: "/setup" },
-    { label: "FAQ", href: "/faq" },
+    { label: "Canlı", href: "/live" },
+    { label: "Geçmiş Yayınlar", href: "/analytics" },
+    { label: "Topluluk", href: "/community" },
+    { label: "Galeri", href: "/gallery" },
+    { label: "Yayın Ekipmanları", href: "/setup" },
+    { label: "SSS", href: "/faq" },
   ],
   /** Default Open Graph image */
   ogImage: "/og-image.png",
