@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit, Inter } from "next/font/google";
 import { Providers } from "@/providers";
-import { siteConfig } from "@/config/site";
+import { getSiteSettingsServer } from "@/lib/supabase/settings-server";
 import "@/styles/globals.css";
 
 // ---------------------------------------------------------------------------
@@ -25,61 +25,70 @@ const inter = Inter({
 });
 
 // ---------------------------------------------------------------------------
-// Site Metadata
+// Dynamic Site Metadata
 // ---------------------------------------------------------------------------
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
-  title: {
-    default: siteConfig.name,
-    template: `%s — ${siteConfig.name}`,
-  },
-  description: siteConfig.description,
-  keywords: ["zehragn", "kick", "streamer", "gaming", "live", "community"],
-  authors: [{ name: siteConfig.name }],
-  creator: siteConfig.name,
-  openGraph: {
-    type: "website",
-    locale: "tr_TR",
-    alternateLocale: "en_US",
-    url: siteConfig.url,
-    title: siteConfig.name,
-    description: siteConfig.description,
-    siteName: siteConfig.name,
-    images: [
-      {
-        url: siteConfig.ogImage,
-        width: 1200,
-        height: 630,
-        alt: `${siteConfig.name} — Official Website`,
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteConfig.name,
-    description: siteConfig.description,
-    images: [siteConfig.ogImage],
-    creator: "@zehragn",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettingsServer();
+  const title = settings.seo.title;
+  const description = settings.seo.description;
+  const keywords = settings.seo.keywords.split(",").map(k => k.trim());
+  const streamerName = settings.branding.streamerName;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://zehragn.com";
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: title,
+      template: `%s — ${streamerName}`,
+    },
+    description,
+    keywords,
+    authors: [{ name: streamerName }],
+    creator: streamerName,
+    openGraph: {
+      type: "website",
+      locale: "tr_TR",
+      alternateLocale: "en_US",
+      url: siteUrl,
+      title: title,
+      description,
+      siteName: streamerName,
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: `${streamerName} — Official Website`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: title,
+      description,
+      images: ["/og-image.png"],
+      creator: `@${streamerName.toLowerCase()}`,
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
-  },
-  manifest: "/site.webmanifest",
-};
+    icons: {
+      icon: settings.branding.faviconUrl || "/favicon.ico",
+      shortcut: "/favicon-16x16.png",
+      apple: "/apple-touch-icon.png",
+    },
+    manifest: "/site.webmanifest",
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [{ media: "(prefers-color-scheme: dark)", color: "#0a0a0a" }],

@@ -48,9 +48,9 @@ export function AdminSettingsControls() {
     if (settings) {
       // General
       const site = settings.site || {};
-      setStreamerName(site.streamerName || "Melih Koçhan");
-      setCopyrightText(site.copyrightText || "© 2026 Melih Koçhan. Tüm Hakları Saklıdır.");
-      setContactEmail(site.contactEmail || "contact@melihkochan.com");
+      setStreamerName(site.streamerName || "Zehra");
+      setCopyrightText(site.copyrightText || "© 2026 Zehra. Tüm Hakları Saklıdır.");
+      setContactEmail(site.contactEmail || "zehra@gmail.com");
 
       // Hero
       const hero = settings.hero || {};
@@ -60,9 +60,9 @@ export function AdminSettingsControls() {
 
       // SEO
       const seo = settings.seo || {};
-      setSeoTitle(seo.title || "Melih Koçhan - Streamer Hub");
-      setSeoDescription(seo.description || "Melih Koçhan'ın resmî web portalı ve yayın arşivi.");
-      setSeoKeywords(seo.keywords || "Melih Koçhan, Kick, yayın, donanım, setup, topluluk");
+      setSeoTitle(seo.title || "Zehra - Streamer Hub");
+      setSeoDescription(seo.description || "Zehra'ın resmî web portalı ve yayın arşivi.");
+      setSeoKeywords(seo.keywords || "Zehra, Kick, yayın, donanım, setup, topluluk");
 
       // Social
       const social = settings.social || {};
@@ -340,12 +340,12 @@ export function AdminSettingsControls() {
                   <Badge className={cn(
                     "border-none text-white text-[10px] font-bold px-2 py-0.5 rounded-full",
                     isSyncing ? "bg-amber-500 animate-pulse" :
-                    syncStatus.status === "success" ? "bg-emerald-500" :
-                    syncStatus.status === "failed" ? "bg-rose-500" : "bg-zinc-700"
+                      syncStatus.status === "success" ? "bg-emerald-500" :
+                        syncStatus.status === "failed" ? "bg-rose-500" : "bg-zinc-700"
                   )}>
                     {isSyncing ? "Senkronize Ediliyor" :
-                     syncStatus.status === "success" ? "Aktif / Başarılı" :
-                     syncStatus.status === "failed" ? "Hata Oluştu" : "Boşta"}
+                      syncStatus.status === "success" ? "Aktif / Başarılı" :
+                        syncStatus.status === "failed" ? "Hata Oluştu" : "Boşta"}
                   </Badge>
                 )}
               </div>

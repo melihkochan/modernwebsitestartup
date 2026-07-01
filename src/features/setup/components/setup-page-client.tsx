@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useSetupProducts } from "../hooks/use-setup";
 import { getStorageUrl } from "@/lib/supabase/storage";
 import { tr } from "@/config/tr";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 
 const SETUP_CATEGORIES = [
   { id: "all", label: "Tüm Ekipmanlar", icon: Layers },
@@ -34,8 +35,11 @@ const SETUP_CATEGORIES = [
 export function SetupPageClient() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [expandedProductIds, setExpandedProductIds] = useState<Record<string, boolean>>({});
+  const { data: settings } = usePublicSiteSettings();
 
   const { data: products = [], isLoading } = useSetupProducts(activeCategory);
+  
+  const streamerName = settings?.branding?.streamerName || "Zehragn";
 
   const toggleSpecs = (id: string) => {
     setExpandedProductIds((prev) => ({
@@ -72,7 +76,7 @@ export function SetupPageClient() {
               {tr.setup.title}
             </h1>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Melih Koçhan'ın yayınlarında ve oyunlarda kullandığı tüm donanımları, profesyonel ekipmanları ve konfor ürünlerini inceleyin.
+              {streamerName}'ın yayınlarında ve oyunlarda kullandığı tüm donanımları, profesyonel ekipmanları ve konfor ürünlerini inceleyin.
             </p>
           </div>
 
@@ -119,7 +123,9 @@ export function SetupPageClient() {
             <AnimatePresence mode="popLayout">
               {products.map((prod) => {
                 const isExpanded = !!expandedProductIds[prod.id];
-                const imageUrl = getStorageUrl(prod.storage_path);
+                const imageUrl = prod.storage_path
+                  ? getStorageUrl(prod.storage_path.startsWith("setup/") ? prod.storage_path : `setup/${prod.storage_path}`)
+                  : "";
 
                 // specs logic: specifications flat object to array
                 const specs = prod.specifications && typeof prod.specifications === "object"

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Tv, Clock, Users, Eye } from "lucide-react";
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { SectionTitle } from "@/components/analytics/section-title";
+import { SectionTitle } from "@/components/common";
 import { RevealOnScroll, StaggerChildren } from "@/components/motion";
 import { useRecentBroadcasts } from "@/features/broadcasts/hooks/use-broadcasts";
 import { tr } from "@/config/tr";
@@ -166,7 +166,7 @@ export function RecentBroadcastsPreviewSection() {
           {/* View All Button */}
           <div className="mt-12 flex justify-center">
             <Link
-              href="/analytics"
+              href="/broadcasts"
               className="button-primary inline-flex items-center gap-2"
             >
               <span>{tr.home.viewAllBroadcasts}</span>

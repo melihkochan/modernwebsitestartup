@@ -3,38 +3,28 @@
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { useEffect } from "react";
-import { LiveBadge } from "@/components/analytics";
+import { LiveBadge } from "@/components/common";
 import { FadeIn, MagneticButton, SlideUp } from "@/components/motion";
-import { siteConfig } from "@/config/site";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 import { formatNumber } from "@/lib/utils";
 import { useStreamInfo } from "@/features/live/hooks/use-live";
 
-/**
- * Hero Section — Full viewport cinematic opener.
- *
- * Visual layers (bottom to top):
- * 1. Base dark background
- * 2. Animated gradient orbs (slow drift)
- * 3. Dot grid pattern
- * 4. Mouse-following spotlight
- * 5. Noise texture overlay
- * 6. Content
- */
 export function HeroSection() {
   const { data: streamInfo } = useStreamInfo();
+  const { data: settings } = usePublicSiteSettings();
 
   const isLive = streamInfo?.isLive ?? false;
   const viewerCount = streamInfo?.viewerCount ?? 0;
 
-  // Use fixed initial values so SSR and client first render are identical.
-  // After hydration, useEffect sets the real centre position.
+  const streamerName = settings?.branding?.streamerName || "Zehragn";
+  const kickUrl = settings?.social?.kickUrl || "https://kick.com/zehragn";
+
   const mouseX = useMotionValue(760);
   const mouseY = useMotionValue(400);
 
   const springX = useSpring(mouseX, { stiffness: 80, damping: 25 });
   const springY = useSpring(mouseY, { stiffness: 80, damping: 25 });
 
-  // Suppress hydration mismatch: only read window AFTER mount
   useEffect(() => {
     mouseX.set(window.innerWidth / 2);
     mouseY.set(window.innerHeight / 2);
@@ -57,7 +47,6 @@ export function HeroSection() {
     >
       {/* ── Layer 1: Animated gradient orbs ─────────────────────────── */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Top-right orb — large purple */}
         <motion.div
           className="absolute -top-40 -right-40 h-[700px] w-[700px] rounded-full"
           style={{
@@ -68,7 +57,6 @@ export function HeroSection() {
           animate={{ x: [0, 40, -20, 0], y: [0, -30, 50, 0] }}
           transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
         />
-        {/* Bottom-left orb — violet */}
         <motion.div
           className="absolute -bottom-60 -left-20 h-[500px] w-[500px] rounded-full"
           style={{
@@ -79,7 +67,6 @@ export function HeroSection() {
           animate={{ x: [0, -30, 50, 0], y: [0, 40, -20, 0] }}
           transition={{ duration: 22, repeat: Infinity, ease: "easeInOut", delay: 3 }}
         />
-        {/* Center-left accent — deep purple */}
         <motion.div
           className="absolute top-1/2 -left-32 h-[300px] w-[300px] rounded-full"
           style={{
@@ -122,7 +109,6 @@ export function HeroSection() {
 
       {/* ── Content ───────────────────────────────────────────────────── */}
       <div className="relative z-20 flex flex-1 flex-col items-center justify-center px-6 text-center pt-[var(--header-height)]">
-
         {/* Live badge */}
         <FadeIn delay={0.3}>
           <LiveBadge
@@ -137,7 +123,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 32 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          aria-label="Zehragn"
+          aria-label={streamerName}
           style={{
             fontSize: "clamp(3.5rem, 16vw, 13rem)",
             fontFamily: "var(--font-outfit)",
@@ -151,26 +137,26 @@ export function HeroSection() {
             backgroundClip: "text",
           }}
         >
-          ZEHRAGN
+          {streamerName.toUpperCase()}
         </motion.h1>
 
         {/* Subtitle */}
         <SlideUp delay={0.55} distance={16}>
           <p
-            className="mt-6 text-xs sm:text-sm tracking-[0.28em] uppercase font-semibold"
+            className="mt-6 text-xs sm:text-sm tracking-[0.28em] uppercase font-semibold animate-fade-in"
             style={{ fontFamily: "var(--font-inter)", color: "var(--accent-primary)" }}
           >
-            Official Streaming Universe
+            Resmi Yayın Dünyası
           </p>
         </SlideUp>
- 
+
         {/* Tagline */}
         <SlideUp delay={0.65} distance={12}>
           <p
             className="mt-4 max-w-lg text-sm sm:text-base leading-relaxed"
             style={{ fontFamily: "var(--font-inter)", color: "#e4e4e7" }}
           >
-            Live stats, analytics, community and everything else — in one cinematic experience.
+            Canlı yayınlar, topluluk oyun önerileri ve çok daha fazlası — tek bir premium deneyimde.
           </p>
         </SlideUp>
 
@@ -183,22 +169,22 @@ export function HeroSection() {
         >
           <MagneticButton strength={0.25}>
             <a
-              href={siteConfig.kick.channelUrl}
+              href={kickUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 rounded-[var(--radius-full)] bg-[var(--accent-primary)] px-8 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-[var(--accent-primary-hover)] hover:shadow-[0_0_48px_rgba(139,92,246,0.45)]"
+              className="inline-flex items-center gap-2.5 rounded-[var(--radius-full)] bg-[var(--accent-primary)] px-8 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-[var(--accent-primary-hover)] hover:shadow-[0_0_48px_rgba(0,242,154,0.45)]"
             >
-              Watch Live
+              Canlı İzle
               <ExternalLink className="h-4 w-4" aria-hidden />
             </a>
           </MagneticButton>
 
           <MagneticButton strength={0.2}>
             <a
-              href="#analytics"
+              href="#broadcasts-preview"
               className="inline-flex items-center gap-2 rounded-[var(--radius-full)] border border-[var(--border-default)] px-8 py-3.5 text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]"
             >
-              Explore
+              Keşfet
             </a>
           </MagneticButton>
         </motion.div>
@@ -211,7 +197,7 @@ export function HeroSection() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--live-red)] opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--live-red)]" />
               </span>
-              {viewerCount > 0 ? `${formatNumber(viewerCount)} watching right now` : "Stream offline"}
+              {viewerCount > 0 ? `Şu anda ${formatNumber(viewerCount)} kişi izliyor` : "Yayın çevrimdışı"}
             </span>
           </p>
         </FadeIn>
@@ -229,7 +215,7 @@ export function HeroSection() {
           className="text-[9px] tracking-[0.3em] uppercase text-[var(--text-tertiary)]"
           style={{ fontFamily: "var(--font-inter)" }}
         >
-          Scroll
+          Kaydır
         </span>
         <motion.div
           animate={{ y: [0, 7, 0] }}

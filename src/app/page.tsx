@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { siteConfig } from "@/config/site";
+import { getSiteSettingsServer } from "@/lib/supabase/settings-server";
 import { NavbarLiveWrapper } from "@/components/layout/navbar-live-wrapper";
 import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "@/features/home/components/hero-section";
@@ -11,18 +11,25 @@ import { SetupPreviewSection } from "@/features/home/components/setup-preview-se
 import { GalleryPreviewSection } from "@/features/home/components/gallery-preview-section";
 import { FaqPreviewSection } from "@/features/home/components/faq-preview-section";
 
-export const metadata: Metadata = {
-  title: {
-    absolute: siteConfig.name,
-  },
-  description: siteConfig.description,
-  openGraph: {
-    title: `${siteConfig.name} — Official Streaming Universe`,
-    description: siteConfig.description,
-    url: siteConfig.url,
-    type: "website",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettingsServer();
+  const title = settings.seo.title;
+  const description = settings.seo.description;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://zehragn.com";
+
+  return {
+    title: {
+      absolute: title,
+    },
+    description,
+    openGraph: {
+      title: `${settings.branding.streamerName} — Official Streaming Universe`,
+      description,
+      url: siteUrl,
+      type: "website",
+    },
+  };
+}
 
 /**
  * Homepage — Sprint 9 Update

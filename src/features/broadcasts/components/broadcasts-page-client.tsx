@@ -5,6 +5,7 @@ import { Tv, Search, Clock, Users, Eye, ArrowLeft, ArrowRight, Play } from "luci
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { useBroadcasts } from "../hooks/use-broadcasts";
+import { cn } from "@/lib/utils";
 import { tr } from "@/config/tr";
 
 function formatDuration(seconds: number): string {
@@ -27,6 +28,30 @@ function formatDate(isoString: string): string {
     });
   } catch {
     return "N/A";
+  }
+}
+
+function formatLanguage(lang: string | null | undefined): string {
+  if (!lang) return "Türkçe";
+  const l = lang.toLowerCase();
+  if (l === "tr") return "Türkçe";
+  if (l === "en") return "İngilizce";
+  return lang.toUpperCase();
+}
+
+function formatStatus(status: string | null | undefined): { label: string; className: string } {
+  const s = status || "ended";
+  switch (s) {
+    case "scheduled":
+      return { label: "Planlandı", className: "bg-blue-500/10 text-blue-400 border border-blue-500/20" };
+    case "live":
+      return { label: "Canlı", className: "bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse" };
+    case "ended":
+      return { label: "Bitti", className: "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20" };
+    case "cancelled":
+      return { label: "İptal Edildi", className: "bg-orange-500/10 text-orange-400 border border-orange-500/20" };
+    default:
+      return { label: s.toUpperCase(), className: "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20" };
   }
 }
 
@@ -58,7 +83,7 @@ export function BroadcastsPageClient() {
               {tr.analytics.title}
             </h1>
             <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Melih Koçhan'ın gerçekleştirdiği tüm yayınların veritabanı kayıtları ve istatistikleri.
+              Zehragn'ın gerçekleştirdiği tüm yayınların veritabanı kayıtları ve istatistikleri.
             </p>
           </div>
 
@@ -99,10 +124,12 @@ export function BroadcastsPageClient() {
                     <th className="py-4 px-6">{tr.analytics.date}</th>
                     <th className="py-4 px-6">{tr.analytics.broadcastTitle}</th>
                     <th className="py-4 px-6">{tr.analytics.category}</th>
+                    <th className="py-4 px-6 text-center">Dil</th>
                     <th className="py-4 px-6 text-center">{tr.analytics.duration}</th>
                     <th className="py-4 px-6 text-center">{tr.analytics.avgViewers}</th>
                     <th className="py-4 px-6 text-center">{tr.analytics.peakViewers}</th>
                     <th className="py-4 px-6 text-center">{tr.analytics.totalViews}</th>
+                    <th className="py-4 px-6 text-center">Yayın Durumu</th>
                     <th className="py-4 px-6 text-center">VOD</th>
                   </tr>
                 </thead>
@@ -127,6 +154,11 @@ export function BroadcastsPageClient() {
                         </span>
                       </td>
                       <td className="py-4 px-6 text-center">
+                        <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                          {formatLanguage(broadcast.language)}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-center">
                         <div className="inline-flex items-center gap-1.5 justify-center font-medium">
                           <Clock className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
                           <span>{formatDuration(broadcast.duration_seconds || 0)}</span>
@@ -146,6 +178,16 @@ export function BroadcastsPageClient() {
                           <Eye className="h-3.5 w-3.5" />
                           <span>{broadcast.total_views?.toLocaleString() || "-"}</span>
                         </div>
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        {(() => {
+                          const statusDetails = formatStatus(broadcast.status);
+                          return (
+                            <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", statusDetails.className)}>
+                              {statusDetails.label}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="py-4 px-6 text-center">
                         {broadcast.vod_url ? (

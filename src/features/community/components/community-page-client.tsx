@@ -26,6 +26,8 @@ export function CommunityPageClient() {
   const { data: suggestions = [] } = useSuggestions();
   const { data: currentUser } = useCurrentUser();
 
+  const sortedSuggestions = [...suggestions].sort((a, b) => b.votes - a.votes);
+
   const suggestMutation = useSuggestGame();
   const upvoteMutation = useUpvoteSuggestion();
 
@@ -33,11 +35,13 @@ export function CommunityPageClient() {
   const [isSubmittedSuccessfully, setIsSubmittedSuccessfully] = useState(false);
   const [selectedSteamGame, setSelectedSteamGame] = useState<SteamGame | null>(null);
   const [newGameDesc, setNewGameDesc] = useState("");
+  const [suggestionResult, setSuggestionResult] = useState<{ isDuplicate: boolean; status?: string } | null>(null);
 
   const handleOpenSuggestModal = () => {
     setIsSubmittedSuccessfully(false);
     setSelectedSteamGame(null);
     setNewGameDesc("");
+    setSuggestionResult(null);
     setIsSuggestModalOpen(true);
   };
 
@@ -50,7 +54,7 @@ export function CommunityPageClient() {
     if (!currentUser || !selectedSteamGame) return;
 
     try {
-      await suggestMutation.mutateAsync({
+      const res = await suggestMutation.mutateAsync({
         game: selectedSteamGame.name,
         platform: selectedSteamGame.platform || "PC",
         description: newGameDesc || "Açıklama belirtilmedi.",
@@ -59,6 +63,10 @@ export function CommunityPageClient() {
         coverImageUrl: selectedSteamGame.headerImage,
       });
 
+      setSuggestionResult({
+        isDuplicate: !!(res as any).isDuplicate,
+        status: (res as any).existingStatus,
+      });
       setIsSubmittedSuccessfully(true);
     } catch (err) {
       console.error(err);
@@ -115,15 +123,15 @@ export function CommunityPageClient() {
             </Button>
           </div>
 
-          {suggestions.length === 0 ? (
+          {sortedSuggestions.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-16 text-center border border-dashed border-[var(--border-default)] rounded-2xl bg-[var(--bg-surface)]">
               <Gamepad className="h-12 w-12 text-[var(--text-tertiary)] mb-4" />
               <p className="text-[var(--text-secondary)] font-medium">Henüz onaylanmış oyun önerisi bulunmamaktadır.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <AnimatePresence initial={false}>
-                {suggestions.map((item) => (
+                {sortedSuggestions.map((item) => (
                   <motion.div
                     key={item.id}
                     layoutId={`card-${item.id}`}
@@ -132,9 +140,9 @@ export function CommunityPageClient() {
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   >
-                    <GlassCard className="p-5 border border-[var(--border-default)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-all duration-300 flex gap-4 items-stretch relative overflow-hidden group">
+                    <GlassCard className="p-3.5 border border-[var(--border-default)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-elevated)] transition-all duration-300 flex flex-row gap-3.5 items-stretch relative overflow-hidden group rounded-xl">
                       {item.coverImageUrl && (
-                        <div className="w-20 h-28 relative bg-zinc-950 rounded-lg overflow-hidden shrink-0 shadow-[var(--shadow-sm)] border border-[var(--border-default)]">
+                        <div className="w-14 h-20 relative bg-zinc-950 rounded-md overflow-hidden shrink-0 shadow-[var(--shadow-sm)] border border-[var(--border-default)]">
                           <Image
                             src={item.coverImageUrl}
                             alt={item.game}
@@ -145,22 +153,22 @@ export function CommunityPageClient() {
                         </div>
                       )}
                       <div className="flex-1 flex flex-col justify-between min-w-0">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-sm font-bold text-[var(--text-primary)] truncate max-w-[150px]">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h3 className="text-xs font-bold text-[var(--text-primary)] truncate">
                               {item.game}
                             </h3>
-                            <Badge className="bg-[var(--bg-overlay)] text-[var(--text-secondary)] border border-[var(--border-default)] text-[8px] font-bold">
+                            <Badge className="bg-[var(--bg-overlay)] text-[var(--text-secondary)] border border-[var(--border-default)] text-[7px] font-bold px-1.5 py-0">
                               {item.platform}
                             </Badge>
                           </div>
-                          <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-3">
+                          <p className="text-[11px] text-[var(--text-secondary)] leading-normal line-clamp-2">
                             {item.description}
                           </p>
                         </div>
-                        <div className="flex flex-col gap-0.5 mt-2">
-                          <span className="text-[9px] text-[var(--text-tertiary)] uppercase font-semibold">Kaynak</span>
-                          <span className="text-xs font-bold text-[var(--accent-primary)]">Topluluk</span>
+                        <div className="flex flex-col gap-0.5 mt-1">
+                          <span className="text-[8px] text-[var(--text-tertiary)] uppercase font-semibold">Kaynak / İstek Sayısı</span>
+                          <span className="text-xs font-bold text-[var(--accent-primary)]">Topluluk ({item.votes} kişi istedi)</span>
                         </div>
                       </div>
 
@@ -169,14 +177,14 @@ export function CommunityPageClient() {
                         <button
                           onClick={() => handleUpvote(item.id)}
                           className={cn(
-                            "flex flex-col items-center justify-center min-w-[60px] py-2 px-1 rounded-lg border transition-all cursor-pointer shadow-[var(--shadow-sm)]",
+                            "flex flex-col items-center justify-center min-w-[50px] py-1.5 px-0.5 rounded-lg border transition-all cursor-pointer shadow-[var(--shadow-sm)]",
                             item.isUpvoted
                               ? "bg-[var(--accent-primary)]/10 border-[var(--accent-primary)]/30 text-[var(--accent-primary)] scale-[1.03]"
                               : "bg-[var(--bg-overlay)] border-[var(--border-default)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
                           )}
                         >
-                          <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-bold tracking-wider mb-1">Oy</span>
-                          <ThumbsUp className={cn("w-3.5 h-3.5 mb-1 transition-transform", item.isUpvoted && "scale-110 fill-current")} />
+                          <span className="text-[8px] text-[var(--text-tertiary)] uppercase font-bold tracking-wider mb-0.5">Oy</span>
+                          <ThumbsUp className={cn("w-3 h-3 mb-0.5 transition-transform", item.isUpvoted && "scale-110 fill-current")} />
                           <span className="text-xs font-mono font-bold text-[var(--text-primary)]">{item.votes}</span>
                         </button>
                       </div>
@@ -196,16 +204,28 @@ export function CommunityPageClient() {
         size="md"
       >
         {isSubmittedSuccessfully ? (
-          <div className="flex flex-col items-center justify-center p-6 text-center gap-4">
+          <div className="flex flex-col items-center justify-center p-6 text-center gap-4 animate-fade-in">
             <div className="w-16 h-16 rounded-full bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/30 flex items-center justify-center text-[var(--accent-primary)] animate-bounce">
               <Sparkles className="w-8 h-8" />
             </div>
             <div className="flex flex-col gap-1.5">
               <h3 className="text-sm font-bold text-[var(--text-primary)]">
-                Öneriniz Alındı!
+                {suggestionResult?.isDuplicate
+                  ? suggestionResult.status === "approved"
+                    ? "Bu Oyun Zaten Listede!"
+                    : suggestionResult.status === "pending"
+                    ? "Oyun Zaten Onay Bekliyor!"
+                    : "Öneri Yeniden Gönderildi!"
+                  : "Öneriniz Alındı!"}
               </h3>
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed max-w-sm">
-                Oyun öneriniz başarıyla kaydedildi. Admin panelinde onaylandıktan sonra topluluk listesinde ve oylamada yerini alacaktır. Katkınız için teşekkürler!
+                {suggestionResult?.isDuplicate
+                  ? suggestionResult.status === "approved"
+                    ? `"${selectedSteamGame?.name}" oyunu zaten onaylanmış ve topluluk listesinde mevcut. Bu oyun için isteğinizi aldık ve oyunu +1 öneri/oy ekleyerek güncelledik!`
+                    : suggestionResult.status === "pending"
+                    ? `"${selectedSteamGame?.name}" oyunu daha önce önerilmiş ve şu anda onay bekliyor. Öneriyi desteklemek için +1 oy eklendi!`
+                    : `"${selectedSteamGame?.name}" oyunu daha önce reddedilmişti. Öneriniz yeniden değerlendirilmek üzere admin onay sırasına eklendi!`
+                  : `"${selectedSteamGame?.name}" oyunu başarıyla kaydedildi. Admin panelinde onaylandıktan sonra topluluk listesinde ve oylamada yerini alacaktır. Katkınız için teşekkürler!`}
               </p>
             </div>
             <Button

@@ -4,10 +4,11 @@ import Link from "next/link";
 import { Package } from "lucide-react";
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { SectionTitle } from "@/components/analytics/section-title";
+import { SectionTitle } from "@/components/common";
 import { HoverLift, RevealOnScroll, StaggerChildren } from "@/components/motion";
 import { useSetupProducts } from "@/features/setup/hooks/use-setup";
 import { getStorageUrl } from "@/lib/supabase/storage";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 import { tr } from "@/config/tr";
 
 function SetupSkeleton() {
@@ -23,8 +24,10 @@ function SetupSkeleton() {
 }
 
 export function SetupPreviewSection() {
-  // Load all setup products and slice top 3 featured ones
+  const { data: settings } = usePublicSiteSettings();
   const { data: products = [], isLoading } = useSetupProducts("all");
+
+  const streamerName = settings?.branding?.streamerName || "Zehragn";
   const featuredProducts = products.filter((p) => p.is_featured).slice(0, 3);
   const displayProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 3);
 
@@ -35,7 +38,7 @@ export function SetupPreviewSection() {
           <SectionTitle
             eyebrow={tr.home.gearShowcase}
             title="Yayın Ekipmanları"
-            description="Melih Koçhan'ın en yüksek yayın kalitesine ulaşmak için tercih ettiği profesyonel ekipmanlar."
+            description={`${streamerName}'ın en yüksek yayın kalitesine ulaşmak için tercih ettiği profesyonel ekipmanlar.`}
             align="center"
           />
         </RevealOnScroll>
@@ -59,7 +62,10 @@ export function SetupPreviewSection() {
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {displayProducts.map((item) => {
-                const imageUrl = getStorageUrl(item.storage_path);
+                const imageUrl = item.storage_path
+                  ? getStorageUrl(item.storage_path.startsWith("setup/") ? item.storage_path : `setup/${item.storage_path}`)
+                  : "";
+
                 return (
                   <HoverLift key={item.id} amount={6} scale={1.02}>
                     <div

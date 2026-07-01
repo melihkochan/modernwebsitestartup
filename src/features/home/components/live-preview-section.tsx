@@ -3,12 +3,12 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Clock, ExternalLink, Gamepad2, Users } from "lucide-react";
-import { LiveBadge } from "@/components/analytics";
+import { LiveBadge } from "@/components/common";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { HoverGlow, RevealOnScroll, SlideUp } from "@/components/motion";
-import { siteConfig } from "@/config/site";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 import { formatNumber } from "@/lib/utils";
 import { useStreamInfo } from "@/features/live/hooks/use-live";
 import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
@@ -16,6 +16,7 @@ import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
 export function LivePreviewSection() {
   const { data: streamInfo, isLoading } = useStreamInfo();
   const { data: siteAssets } = useSiteAssets();
+  const { data: settings } = usePublicSiteSettings();
 
   const isLive = streamInfo?.isLive ?? false;
   const viewerCount = streamInfo?.viewerCount ?? 0;
@@ -29,6 +30,7 @@ export function LivePreviewSection() {
   const skeletonCls = "animate-pulse rounded bg-[var(--bg-overlay)]";
 
   const imageUrl = isLive ? (streamInfo?.thumbnailUrl || siteAssets?.defaultThumbnailUrl || null) : (siteAssets?.offlineCoverUrl || null);
+  const kickUrl = settings?.social?.kickUrl || "https://kick.com/zehragn";
 
   return (
     <Section padding="lg" divided>
@@ -59,7 +61,7 @@ export function LivePreviewSection() {
                 {/* Play button */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <motion.a
-                    href={siteConfig.kick.channelUrl}
+                    href={kickUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="Watch live stream on Kick"
@@ -113,13 +115,13 @@ export function LivePreviewSection() {
                   className="label-eyebrow"
                   style={{ fontFamily: "var(--font-inter)" }}
                 >
-                  {isLive ? "Live Now" : "Currently Offline"}
+                  {isLive ? "Canlı Yayında" : "Çevrimdışı"}
                 </span>
                 <h2
                   className="text-3xl font-bold tracking-tight text-[var(--text-primary)] md:text-4xl"
                   style={{ fontFamily: "var(--font-outfit)" }}
                 >
-                  Tune In
+                  Yayın Ekranı
                 </h2>
                 {isLoading ? (
                   <div className={`h-4 w-full max-w-md ${skeletonCls}`} />
@@ -137,19 +139,19 @@ export function LivePreviewSection() {
                 {[
                   {
                     icon: Users,
-                    label: "Viewers",
+                    label: "İzleyici",
                     value: isLoading ? "—" : formatNumber(viewerCount),
                     accent: "var(--accent-primary)",
                   },
                   {
                     icon: Clock,
-                    label: "Started",
+                    label: "Başlangıç",
                     value: isLoading ? "—" : durationLabel,
                     accent: "var(--text-tertiary)",
                   },
                   {
                     icon: Gamepad2,
-                    label: "Game",
+                    label: "Kategori",
                     value: isLoading ? "—" : currentGame,
                     accent: "var(--text-tertiary)",
                   },
@@ -180,12 +182,12 @@ export function LivePreviewSection() {
             <SlideUp delay={0.35}>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <a
-                  href={siteConfig.kick.channelUrl}
+                  href={kickUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--accent-primary-hover)] hover:shadow-[0_0_32px_var(--accent-glow)]"
                 >
-                  Watch on Kick
+                  Kick'te İzle
                   <ExternalLink className="h-4 w-4" aria-hidden />
                 </a>
                 {startedAt && (

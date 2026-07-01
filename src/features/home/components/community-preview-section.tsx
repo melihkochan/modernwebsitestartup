@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Gamepad, ThumbsUp } from "lucide-react";
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { SectionTitle } from "@/components/analytics/section-title";
+import { SectionTitle } from "@/components/common";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { RevealOnScroll, StaggerChildren } from "@/components/motion";
@@ -64,40 +64,40 @@ export function CommunityPreviewSection() {
                 <GlassCard
                   key={item.id}
                   intensity="medium"
-                  padding="md"
-                  glow="accent"
                   hoverable
-                  className="flex gap-4 items-stretch group overflow-hidden border border-[var(--border-default)] hover:border-[var(--accent-primary)]/40 transition-all duration-300"
+                  className="p-3.5 flex flex-row gap-3.5 items-stretch group overflow-hidden border border-[var(--border-default)] hover:border-[var(--border-strong)] transition-all duration-300 rounded-xl"
                 >
                   {item.coverImageUrl && (
-                    <div className="w-16 h-20 relative bg-zinc-950 rounded-lg overflow-hidden shrink-0 border border-[var(--border-default)]">
+                    <div className="w-14 h-20 relative bg-zinc-950 rounded-md overflow-hidden shrink-0 border border-[var(--border-default)] shadow-[var(--shadow-sm)]">
                       <Image
                         src={item.coverImageUrl}
                         alt={item.game}
                         fill
-                        className="object-cover"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                         unoptimized
                       />
                     </div>
                   )}
                   <div className="flex-1 flex flex-col justify-between min-w-0">
-                    <div>
-                      <span className="text-[10px] font-semibold text-[var(--accent-primary)] tracking-wider uppercase">
-                        {item.platform}
-                      </span>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)] truncate mt-0.5">
-                        {item.game}
-                      </h3>
-                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mt-1">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="text-xs font-bold text-[var(--text-primary)] truncate">
+                          {item.game}
+                        </h3>
+                        <span className="bg-[var(--bg-overlay)] text-[var(--text-secondary)] border border-[var(--border-default)] text-[7px] font-bold px-1.5 py-0 rounded">
+                          {item.platform}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[var(--text-secondary)] leading-normal line-clamp-2">
                         {item.description}
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3 text-[10px] text-[var(--text-tertiary)]">
-                      <span className="font-bold text-[var(--accent-primary)]">Topluluk</span>
+                    <div className="flex items-center justify-between mt-2 text-[10px] text-[var(--text-tertiary)] border-t border-[var(--border-subtle)] pt-1.5">
+                      <span className="text-[8px] uppercase font-bold text-[var(--accent-primary)]">Topluluk ({item.votes} kişi istedi)</span>
                       <div className="flex items-center gap-1 text-[var(--text-primary)] font-semibold">
                         <ThumbsUp className="h-3 w-3 text-[var(--accent-primary)]" />
-                        <span>{item.votes} Oy</span>
+                        <span className="font-mono text-xs">{item.votes} Oy</span>
                       </div>
                     </div>
                   </div>

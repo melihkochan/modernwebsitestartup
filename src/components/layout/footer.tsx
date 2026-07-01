@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -6,39 +9,39 @@ interface FooterProps {
   className?: string;
 }
 
-const socialLinks = [
-  { label: "Kick", href: siteConfig.social.kick },
-  { label: "YouTube", href: siteConfig.social.youtube },
-  { label: "Twitter", href: siteConfig.social.twitter },
-  { label: "Instagram", href: siteConfig.social.instagram },
-  { label: "Discord", href: siteConfig.social.discord },
-  { label: "TikTok", href: siteConfig.social.tiktok },
-];
-
-const navGroups = [
-  {
-    label: "Navigate",
-    links: siteConfig.nav,
-  },
-  {
-    label: "Connect",
-    links: socialLinks.map((s) => ({ ...s, isExternal: true })),
-  },
-  {
-    label: "Legal",
-    links: [
-      { label: "Privacy Policy", href: "/privacy" },
-      { label: "Terms of Use", href: "/terms" },
-      { label: "Contact", href: "/contact" },
-    ],
-  },
-];
-
-/**
- * Global site footer — multi-column layout with ghosted wordmark backdrop.
- */
 export function Footer({ className }: FooterProps) {
+  const { data: settings } = usePublicSiteSettings();
   const year = new Date().getFullYear();
+
+  const streamerName = settings?.branding?.streamerName || "Zehragn";
+  const kickUrl = settings?.social?.kickUrl || "https://kick.com/zehragn";
+
+  const socialLinks = [
+    { label: "Kick", href: settings?.social?.kickUrl || "https://kick.com/zehragn" },
+    { label: "YouTube", href: settings?.social?.youtubeUrl || "https://youtube.com/@zehragn" },
+    { label: "X / Twitter", href: settings?.social?.twitterUrl || "https://x.com/zehragn" },
+    { label: "Instagram", href: settings?.social?.instagramUrl || "https://instagram.com/zehragn" },
+    { label: "Discord", href: settings?.social?.discordUrl || "https://discord.gg/zehragn" },
+  ];
+
+  const navGroups = [
+    {
+      label: "Gezinti",
+      links: siteConfig.nav,
+    },
+    {
+      label: "Bağlantılar",
+      links: socialLinks.map((s) => ({ ...s, isExternal: true })),
+    },
+    {
+      label: "Yasal",
+      links: [
+        { label: "Gizlilik Politikası", href: "/privacy" },
+        { label: "Kullanım Şartları", href: "/terms" },
+        { label: "İletişim", href: "/contact" },
+      ],
+    },
+  ];
 
   return (
     <footer
@@ -56,7 +59,7 @@ export function Footer({ className }: FooterProps) {
           className="text-[clamp(5rem,20vw,14rem)] font-extrabold leading-none text-[var(--text-primary)] opacity-[0.02] tracking-tighter"
           style={{ fontFamily: "var(--font-outfit)" }}
         >
-          Zehragn
+          {streamerName}
         </span>
       </div>
 
@@ -70,19 +73,19 @@ export function Footer({ className }: FooterProps) {
               className="text-2xl font-bold text-[var(--text-primary)] tracking-tight"
               style={{ fontFamily: "var(--font-outfit)" }}
             >
-              Zehragn
+              {streamerName}
             </Link>
             <p className="mt-3 text-sm text-[var(--text-secondary)] leading-relaxed max-w-[200px]">
-              Official home of streamer Zehragn. Live on Kick.
+              Yayıncı {streamerName}'ın resmi web sitesi. Kick'te canlı yayında.
             </p>
             <a
-              href={siteConfig.kick.channelUrl}
+              href={kickUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-2 rounded-[var(--radius-full)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
             >
               <span className="h-2 w-2 rounded-full bg-[var(--success)]" aria-hidden />
-              kick.com/zehragn
+              {kickUrl.replace("https://", "")}
             </a>
           </div>
 
@@ -90,7 +93,7 @@ export function Footer({ className }: FooterProps) {
           {navGroups.map((group) => (
             <div key={group.label}>
               <h3
-                className="label-eyebrow mb-4"
+                className="label-eyebrow mb-4 animate-fade-in"
                 style={{ fontFamily: "var(--font-inter)" }}
               >
                 {group.label}
@@ -125,10 +128,10 @@ export function Footer({ className }: FooterProps) {
         {/* Bottom bar */}
         <div className="mt-16 flex flex-col items-start justify-between gap-4 border-t border-[var(--border-subtle)] pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-[var(--text-tertiary)]">
-            © {year} Zehragn. All rights reserved.
+            © {year} {streamerName}. Tüm hakları saklıdır.
           </p>
           <p className="text-xs text-[var(--text-tertiary)]">
-            Made with ❤️ by the community
+            Topluluk tarafından ❤️ ile yapılmıştır
           </p>
         </div>
       </div>

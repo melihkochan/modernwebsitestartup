@@ -25,7 +25,7 @@ export const siteConfig = {
   /** Navigation items for the global header */
   nav: [
     { label: "Canlı", href: "/live" },
-    { label: "Geçmiş Yayınlar", href: "/analytics" },
+    { label: "Geçmiş Yayınlar", href: "/broadcasts" },
     { label: "Topluluk", href: "/community" },
     { label: "Galeri", href: "/gallery" },
     { label: "Yayın Ekipmanları", href: "/setup" },

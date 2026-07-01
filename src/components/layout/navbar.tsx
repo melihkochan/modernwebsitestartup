@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -17,17 +18,9 @@ interface NavbarProps {
   viewerCount?: number;
 }
 
-/**
- * Global site navigation — sticky header with scroll-aware glass effect.
- *
- * Features:
- * - Transparent at page top → glass blur after 10px scroll
- * - Live status indicator with pulsing dot and viewer count
- * - Mobile: hamburger → full-screen slide-down menu
- * - Active route highlighting via Framer Motion layoutId
- */
 export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
   const { data: siteAssets } = useSiteAssets();
+  const { data: settings } = usePublicSiteSettings();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
@@ -54,6 +47,9 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
         : viewerCount.toString()
       : null;
 
+  const kickUrl = settings?.social?.kickUrl || "https://kick.com/zehragn";
+  const streamerName = settings?.branding?.streamerName || "Zehragn";
+
   return (
     <>
       <header
@@ -70,18 +66,18 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
             className="flex items-center gap-2.5 text-xl font-bold text-[var(--text-primary)] tracking-tight transition-opacity hover:opacity-80"
             style={{ fontFamily: "var(--font-outfit)" }}
           >
-            {siteAssets?.logoUrl ? (
+            {settings?.branding?.logoUrl || siteAssets?.logoUrl ? (
               <Image
-                src={siteAssets.logoUrl}
+                src={settings?.branding?.logoUrl || siteAssets?.logoUrl || ""}
                 alt="Logo"
                 width={32}
                 height={32}
                 className="rounded-full object-cover"
                 unoptimized={process.env.NODE_ENV === "development"}
               />
-            ) : siteAssets?.avatarUrl ? (
+            ) : settings?.branding?.avatarUrl || siteAssets?.avatarUrl ? (
               <Image
-                src={siteAssets.avatarUrl}
+                src={settings?.branding?.avatarUrl || siteAssets?.avatarUrl || ""}
                 alt="Avatar"
                 width={32}
                 height={32}
@@ -89,7 +85,7 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
                 unoptimized={process.env.NODE_ENV === "development"}
               />
             ) : null}
-            Zehragn
+            {streamerName}
           </Link>
 
           {/* Desktop Navigation */}
@@ -126,7 +122,7 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
             {/* Live indicator */}
             {isLive && (
               <a
-                href={siteConfig.kick.channelUrl}
+                href={kickUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden sm:flex items-center gap-2 rounded-[var(--radius-full)] border border-[var(--live-red)]/20 bg-[var(--live-red-glow)] px-3 py-1 text-xs font-semibold text-[var(--live-red)] transition-opacity hover:opacity-80"
@@ -137,7 +133,7 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
                   />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--live-red)]" />
                 </span>
-                LIVE
+                CANLI
                 {formattedViewers && (
                   <span className="text-[var(--text-secondary)] font-normal">
                     {formattedViewers}
@@ -148,7 +144,7 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
 
             {/* CTA button */}
             <a
-              href={siteConfig.kick.channelUrl}
+              href={kickUrl}
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
@@ -158,14 +154,14 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
                   : "border border-[var(--border-default)] bg-transparent text-[var(--text-primary)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-overlay)]"
               )}
             >
-              {isLive ? "Watch Live" : "Kick"}
+              {isLive ? "Canlı İzle" : "Kick"}
               <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             </a>
 
             {/* Mobile hamburger */}
             <button
               type="button"
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-label={mobileOpen ? "Menüyü Kapat" : "Menüyü Aç"}
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
               className="lg:hidden flex items-center justify-center h-9 w-9 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:bg-[var(--bg-overlay)] hover:text-[var(--text-primary)] transition-colors"
@@ -238,7 +234,7 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
 
             <div className="px-6 mt-4 flex gap-3">
               <a
-                href={siteConfig.kick.channelUrl}
+                href={kickUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
@@ -249,7 +245,7 @@ export function Navbar({ isLive = false, viewerCount }: NavbarProps) {
                 )}
               >
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                {isLive ? "Watch Live" : "Kick Channel"}
+                {isLive ? "Canlı İzle" : "Kick Kanalı"}
               </a>
             </div>
           </motion.div>

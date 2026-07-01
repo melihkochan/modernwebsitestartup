@@ -5,10 +5,10 @@ import { BroadcastsPageClient } from "@/features/broadcasts/components/broadcast
 
 export const metadata: Metadata = {
   title: "Geçmiş Yayınlar",
-  description: "Melih Koçhan'ın gerçekleştirdiği tüm yayınların veritabanı kayıtları ve detaylı izleyici istatistikleri.",
+  description: "Zehragn'ın gerçekleştirdiği tüm yayınların veritabanı kayıtları.",
 };
 
-export default function AnalyticsPage() {
+export default function BroadcastsPage() {
   return (
     <>
       <NavbarLiveWrapper />

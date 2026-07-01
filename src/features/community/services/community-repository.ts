@@ -94,7 +94,9 @@ export const communityRepository: CommunityRepository = {
           isUpvoted: true,
           steamAppId: game.steamAppId,
           coverImageUrl: game.coverImageUrl || "",
-        };
+          isDuplicate: true,
+          existingStatus: existing.status,
+        } as any;
       }
 
       const { data, error } = await supabase

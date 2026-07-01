@@ -16,15 +16,6 @@ interface SectionTitleProps {
 /**
  * Section heading with optional eyebrow label, description, and action slot.
  * Used to introduce every major content section on a page.
- *
- * @example
- * <SectionTitle
- *   eyebrow="This Month"
- *   title="Stream Analytics"
- *   description="Peak viewers, hours streamed, and follower growth."
- *   align="left"
- *   action={<TimeframeToggle />}
- * />
  */
 export function SectionTitle({
   eyebrow,

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { SectionTitle } from "@/components/analytics/section-title";
+import { SectionTitle } from "@/components/common";
 import { RevealOnScroll } from "@/components/motion";
 import { useFeaturedGalleryItems } from "@/features/gallery/hooks/use-gallery";
 import { Play } from "lucide-react";

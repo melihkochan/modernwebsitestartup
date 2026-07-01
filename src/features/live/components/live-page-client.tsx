@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { siteConfig } from "@/config/site";
 import Image from "next/image";
 import { useSiteAssets } from "@/features/media/hooks/use-site-assets";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 import { useStreamInfo } from "../hooks/use-live";
 import { useSuggestions } from "@/features/community/hooks/use-community";
 
@@ -25,6 +26,11 @@ export function LivePageClient() {
   const { data: streamInfo, isLoading: isStreamLoading } = useStreamInfo();
   const { data: siteAssets } = useSiteAssets();
   const { data: suggestions = [], isLoading: suggestionsLoading } = useSuggestions();
+  const { data: settings } = usePublicSiteSettings();
+
+  const kickUrl = settings?.social?.kickUrl || "https://kick.com/zehragn";
+  const kickChannelSlug = kickUrl.split("/").pop() || "zehragn";
+  const discordUrl = settings?.social?.discordUrl || "https://discord.gg/zehragn";
 
   const isLive = streamInfo?.isLive ?? false;
   const viewerCount = streamInfo?.viewerCount ?? 0;
@@ -111,7 +117,7 @@ export function LivePageClient() {
                   </div>
 
                   <a
-                    href={siteConfig.kick.channelUrl}
+                    href={kickUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] group transition-colors"
@@ -124,7 +130,7 @@ export function LivePageClient() {
                 {/* Real Embed Player Container */}
                 <div className="relative aspect-video rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-default)] bg-[black] shadow-[var(--shadow-lg)]">
                   <iframe
-                    src={`https://player.kick.com/${siteConfig.kick.channelSlug}`}
+                    src={`https://player.kick.com/${kickChannelSlug}`}
                     className="w-full h-full border-none"
                     allowFullScreen
                   />
@@ -194,7 +200,7 @@ export function LivePageClient() {
                               unoptimized={process.env.NODE_ENV === "development"}
                             />
                           ) : null}
-                          @{siteConfig.kick.channelSlug}
+                          @{kickChannelSlug}
                         </span>
                       </div>
                     </div>
@@ -272,12 +278,12 @@ export function LivePageClient() {
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3 mt-2">
-                    <a href={siteConfig.social.discord} target="_blank" rel="noopener noreferrer">
+                    <a href={discordUrl} target="_blank" rel="noopener noreferrer">
                       <Button variant="outline" className="h-9 px-4 text-xs font-semibold hover:bg-[var(--accent-primary)]/10 hover:border-[var(--accent-primary)]/30 hover:text-[var(--accent-primary)] cursor-pointer">
                         Discord Topluluğuna Katıl
                       </Button>
                     </a>
-                    <a href={siteConfig.kick.channelUrl} target="_blank" rel="noopener noreferrer">
+                    <a href={kickUrl} target="_blank" rel="noopener noreferrer">
                       <Button className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none cursor-pointer">
                         {"Kick'te Takip Et"}
                       </Button>

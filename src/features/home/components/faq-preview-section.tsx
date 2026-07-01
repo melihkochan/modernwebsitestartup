@@ -2,10 +2,11 @@
 
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { SectionTitle } from "@/components/analytics/section-title";
+import { SectionTitle } from "@/components/common";
 import { Accordion } from "@/components/ui/accordion";
 import { RevealOnScroll } from "@/components/motion";
 import { useFaqItems } from "@/features/faq/hooks/use-faq";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 
 function FaqSkeleton() {
   return (
@@ -19,6 +20,9 @@ function FaqSkeleton() {
 
 export function FaqPreviewSection() {
   const { data: items, isLoading } = useFaqItems("all");
+  const { data: settings } = usePublicSiteSettings();
+
+  const streamerName = settings?.branding?.streamerName || "Zehragn";
 
   return (
     <Section padding="lg" divided>
@@ -28,18 +32,18 @@ export function FaqPreviewSection() {
           <div className="lg:col-span-4">
             <RevealOnScroll animation="fade">
               <SectionTitle
-                eyebrow="FAQ"
-                title="Questions, Answered"
-                description="Everything you need to know about Zehragn, the streams, and the community."
+                eyebrow="SSS"
+                title="Sıkça Sorulan Sorular"
+                description={`${streamerName}, yayınlar ve topluluğumuz hakkında bilmeniz gereken her şey.`}
                 align="left"
               />
 
               <div className="mt-8">
                 <a
                   href="/faq"
-                  className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] group"
+                  className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] group font-semibold"
                 >
-                  View all questions
+                  Tüm soruları görüntüle
                   <span
                     className="inline-block transition-transform group-hover:translate-x-1"
                     aria-hidden

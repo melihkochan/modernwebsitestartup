@@ -17,7 +17,7 @@ import { Accordion } from "@/components/ui/accordion";
 import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { siteConfig } from "@/config/site";
+import { usePublicSiteSettings } from "@/hooks/use-site-settings";
 import { cn } from "@/lib/utils";
 import { useFaqItems } from "../hooks/use-faq";
 
@@ -32,8 +32,11 @@ const FAQ_CATEGORIES = [
 export function FaqPageClient() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const { data: settings } = usePublicSiteSettings();
 
   const { data: faqs = [], isLoading } = useFaqItems(activeCategory);
+
+  const discordUrl = settings?.social?.discordUrl || "https://discord.gg/zehragn";
 
   const filteredFaqs = faqs.filter((faq) => {
     const searchMatches =
@@ -56,7 +59,7 @@ export function FaqPageClient() {
       <div className="absolute bottom-[10%] right-[-15%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.02),transparent_70%)] pointer-events-none z-0" />
 
       <Container className="relative z-10 flex flex-col gap-12 max-w-4xl">
-        
+
         {/* Title area */}
         <div className="flex flex-col gap-3">
           <Badge variant="outline" className="border-emerald-400/25 text-emerald-400 font-bold bg-emerald-500/5 uppercase self-start">
@@ -66,7 +69,7 @@ export function FaqPageClient() {
             Sıkça Sorulan Sorular
           </h1>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-            Melih Koçhan'ın yayın takvimi, donanım özellikleri, ekipmanları ve topluluk etkinlikleri hakkında merak ettiğiniz tüm soruların cevapları.
+            Zehragn'ın yayın takvimi, donanım özellikleri, ekipmanları ve topluluk etkinlikleri hakkında merak ettiğiniz tüm soruların cevapları.
           </p>
         </div>
 
@@ -129,7 +132,7 @@ export function FaqPageClient() {
                 Farklı anahtar kelimeler aramayı deneyebilir, kategori filtrelerini değiştirebilir veya resmî Discord sunucumuza gelerek sorabilirsiniz.
               </p>
             </div>
-            <a href={siteConfig.social.discord} target="_blank" rel="noopener noreferrer" className="mt-2">
+            <a href={discordUrl} target="_blank" rel="noopener noreferrer" className="mt-2">
               <Button className="h-9 px-4 text-xs font-semibold bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-primary-hover)] border-none cursor-pointer flex items-center gap-1.5">
                 <MessageCircle className="w-4 h-4" />
                 Discord Sunucumuza Katılın

@@ -11,14 +11,6 @@ interface LiveBadgeProps {
 
 /**
  * Live status indicator with animated pulsing dot.
- *
- * Variants:
- * - `full` — "● LIVE · 12,340 viewers" pill
- * - `compact` — "● LIVE" pill without count
- * - `dot` — just the animated red dot
- *
- * @example
- * <LiveBadge isLive={stream.isLive} viewerCount={stream.viewerCount} variant="full" />
  */
 export function LiveBadge({ isLive, viewerCount, variant = "full", className }: LiveBadgeProps) {
   if (!isLive) {
