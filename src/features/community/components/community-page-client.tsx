@@ -101,7 +101,7 @@ export function CommunityPageClient() {
             </h1>
           </div>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-            Zehragn'ın yayınlarında oynamasını istediğiniz oyunları önerin ve en çok oylanan oyunların canlı yayına gelmesini sağlayın.
+            Zehragn&apos;ın yayınlarında oynamasını istediğiniz oyunları önerin ve en çok oylanan oyunların canlı yayına gelmesini sağlayın.
           </p>
         </div>
 

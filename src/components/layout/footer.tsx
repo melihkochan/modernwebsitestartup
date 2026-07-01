@@ -76,7 +76,7 @@ export function Footer({ className }: FooterProps) {
               {streamerName}
             </Link>
             <p className="mt-3 text-sm text-[var(--text-secondary)] leading-relaxed max-w-[200px]">
-              Yayıncı {streamerName}'ın resmi web sitesi. Kick'te canlı yayında.
+              Yayıncı {streamerName}&apos;ın resmi web sitesi. Kick&apos;te canlı yayında.
             </p>
             <a
               href={kickUrl}

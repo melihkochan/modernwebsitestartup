@@ -8,7 +8,6 @@ export interface GalleryRepository {
   getFeaturedItems(): Promise<GalleryItem[]>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToGalleryItem(row: Record<string, any>): GalleryItem {
   const rawPath = row.storage_path || "";
   const storagePath = rawPath.startsWith("gallery/") ? rawPath : `gallery/${rawPath}`;

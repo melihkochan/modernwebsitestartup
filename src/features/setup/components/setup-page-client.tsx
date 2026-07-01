@@ -76,7 +76,7 @@ export function SetupPageClient() {
               {tr.setup.title}
             </h1>
             <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-              {streamerName}'ın yayınlarında ve oyunlarda kullandığı tüm donanımları, profesyonel ekipmanları ve konfor ürünlerini inceleyin.
+              {streamerName}&apos;ın yayınlarında ve oyunlarda kullandığı tüm donanımları, profesyonel ekipmanları ve konfor ürünlerini inceleyin.
             </p>
           </div>
 

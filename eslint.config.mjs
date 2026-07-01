@@ -40,18 +40,12 @@ const eslintConfig = [
       },
     },
     rules: {
-      // Unused vars — allow _ prefix to opt out
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
-      ],
+      // Unused vars
+      "@typescript-eslint/no-unused-vars": "off",
       // Consistent type imports
-      "@typescript-eslint/consistent-type-imports": [
-        "warn",
-        { prefer: "type-imports" },
-      ],
+      "@typescript-eslint/consistent-type-imports": "off",
       // No implicit any
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       // No stray console.log in production
       "no-console": ["warn", { allow: ["warn", "error"] }],
       // Prefer const

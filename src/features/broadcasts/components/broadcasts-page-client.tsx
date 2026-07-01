@@ -83,7 +83,7 @@ export function BroadcastsPageClient() {
               {tr.analytics.title}
             </h1>
             <p className="mt-2 text-sm text-[var(--text-secondary)]">
-              Zehragn'ın gerçekleştirdiği tüm yayınların veritabanı kayıtları ve istatistikleri.
+              Zehragn&apos;ın gerçekleştirdiği tüm yayınların veritabanı kayıtları ve istatistikleri.
             </p>
           </div>
 

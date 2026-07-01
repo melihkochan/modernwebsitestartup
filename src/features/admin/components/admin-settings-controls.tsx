@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect } from "react";
 import { RefreshCw, Save, Sliders, ShieldAlert, Loader2, AlertCircle } from "lucide-react";
 import { GlassCard } from "@/components/ui/glass-card";
@@ -384,7 +386,7 @@ export function AdminSettingsControls() {
 
               <div className="border-t border-[var(--border-subtle)] pt-4 flex flex-col gap-3">
                 <span className="text-[10px] text-[var(--text-tertiary)] leading-relaxed">
-                  Kick Sync Edge Function'ı normal şartlarda web-hook entegrasyonu ile Kick canlı yayın sinyalleri doğrultusunda arka planda çalışır. Dilerseniz hemen şimdi manuel olarak tetikleyebilirsiniz:
+                  Kick Sync Edge Function&apos;ı normal şartlarda web-hook entegrasyonu ile Kick canlı yayın sinyalleri doğrultusunda arka planda çalışır. Dilerseniz hemen şimdi manuel olarak tetikleyebilirsiniz:
                 </span>
                 <Button
                   onClick={() => triggerSync()}

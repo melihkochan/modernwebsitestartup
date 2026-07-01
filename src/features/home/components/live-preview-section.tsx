@@ -187,7 +187,7 @@ export function LivePreviewSection() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--accent-primary)] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[var(--accent-primary-hover)] hover:shadow-[0_0_32px_var(--accent-glow)]"
                 >
-                  Kick'te İzle
+                  Kick&apos;te İzle
                   <ExternalLink className="h-4 w-4" aria-hidden />
                 </a>
                 {startedAt && (

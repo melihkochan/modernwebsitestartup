@@ -69,7 +69,7 @@ export function FaqPageClient() {
             Sıkça Sorulan Sorular
           </h1>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-            Zehragn'ın yayın takvimi, donanım özellikleri, ekipmanları ve topluluk etkinlikleri hakkında merak ettiğiniz tüm soruların cevapları.
+            Zehragn&apos;ın yayın takvimi, donanım özellikleri, ekipmanları ve topluluk etkinlikleri hakkında merak ettiğiniz tüm soruların cevapları.
           </p>
         </div>
 

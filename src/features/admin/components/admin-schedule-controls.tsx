@@ -82,7 +82,7 @@ export function AdminScheduleControls() {
             Yayın Geçmişi Yönetimi
           </h1>
           <p className="text-xs text-[var(--text-secondary)]">
-            Kick API'den veya Edge Function'lardan kaydedilen tüm geçmiş yayınları inceleyin, başlık ve VOD linklerini güncelleyin.
+            Kick API&apos;den veya Edge Function&apos;lardan kaydedilen tüm geçmiş yayınları inceleyin, başlık ve VOD linklerini güncelleyin.
           </p>
         </div>
 
